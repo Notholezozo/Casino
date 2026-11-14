@@ -1,0 +1,11 @@
+@for (button of buttons(); track button.action) {
+  <button
+    type="button"
+    class="btn"
+    [class.btn--primary]="button.action === 'Hit'"
+    [disabled]="disabled() || !button.enabled"
+    (click)="actionChosen.emit(button.action)"
+  >
+    {{ button.label }}
+  </button>
+}

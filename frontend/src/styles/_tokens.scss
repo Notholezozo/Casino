@@ -1,0 +1,53 @@
+// Jetons de design partagés. Les composants ne codent aucune couleur en dur :
+// ils lisent ces variables CSS.
+
+@mixin root-tokens {
+  // Tapis
+  --felt-950: #041a12;
+  --felt-900: #06281c;
+  --felt-800: #0a3b29;
+  --felt-700: #0f5138;
+  --felt-600: #15694a;
+
+  // Accents
+  --gold-300: #f3d98b;
+  --gold-400: #e9c46a;
+  --gold-600: #b8892b;
+  --danger: #e5484d;
+  --success: #3ecf8e;
+  --info: #7cc4ff;
+
+  // Texte
+  --ink: #f6f2e7;
+  --ink-muted: rgba(246, 242, 231, 0.68);
+  --ink-on-gold: #2a1e05;
+
+  // Surfaces
+  --surface: rgba(0, 0, 0, 0.26);
+  --surface-strong: rgba(0, 0, 0, 0.48);
+  --border: rgba(255, 255, 255, 0.14);
+
+  // Cartes
+  --card-face: #fdfcf7;
+  --card-black: #1b1b1f;
+  --card-red: #c8102e;
+  --card-w: 4rem;
+
+  // Géométrie
+  --radius-sm: 0.5rem;
+  --radius-md: 0.875rem;
+  --radius-lg: 1.25rem;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --tap-target: 3.25rem;
+
+  --shadow-card: 0 2px 6px rgba(0, 0, 0, 0.35);
+  --shadow-raised: 0 8px 24px rgba(0, 0, 0, 0.35);
+
+  --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-display: Georgia, 'Times New Roman', serif;
+}

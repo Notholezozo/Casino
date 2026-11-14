@@ -1,0 +1,26 @@
+@let r = result();
+
+<p class="headline" [class.is-clear]="r.sipsToDrink === 0">
+  @if (r.sipsToDrink > 0) {
+    Tu bois <strong>{{ r.sipsToDrink | sips }}</strong>
+  } @else {
+    Rien à boire !
+  }
+</p>
+
+<ul class="details">
+  @if (r.sipsLost > 0) {
+    <li>Perdues sur tes mains : {{ r.sipsLost | sips }}</li>
+  }
+  @for (transfer of r.received; track $index) {
+    <li>Reçues de {{ transfer.fromPlayerName }} : {{ transfer.sips | sips }}</li>
+  }
+  @for (transfer of r.given; track $index) {
+    <li>Données à {{ transfer.toPlayerName }} : {{ transfer.sips | sips }}</li>
+  }
+  @if (r.sipsToDistribute > 0 && !r.canDistribute) {
+    <li>Tu as gagné {{ r.sipsToDistribute | sips }}, mais il n'y a personne à qui distribuer.</li>
+  } @else if (r.sipsToDistribute > 0 && !r.distributionDone) {
+    <li>{{ r.sipsToDistribute | sips }} à distribuer…</li>
+  }
+</ul>

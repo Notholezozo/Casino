@@ -1,0 +1,100 @@
+@if (view(); as v) {
+  <header class="topbar">
+    <div class="identity">
+      <span class="identity__name">{{ v.me.name }}</span>
+      <span class="identity__meta">
+        Table {{ v.tableCode }} · bu {{ v.me.totalDrunk }} · donné {{ v.me.totalGiven }}
+      </span>
+    </div>
+    @if (store.hubStatus() !== 'connected') {
+      <span class="badge badge--danger">Reconnexion…</span>
+    }
+    <button type="button" class="btn btn--small btn--ghost" (click)="leave()">Quitter</button>
+  </header>
+
+  <main class="felt">
+    <section class="dealer" aria-label="Croupier">
+      <bj-dealer-hand [dealer]="v.dealer" />
+    </section>
+
+    <section class="status" aria-live="polite">
+      <p class="status__text">{{ statusText() }}</p>
+      @if (store.deadline(); as deadline) {
+        <app-countdown [deadline]="deadline" />
+      }
+    </section>
+
+    <section class="hands" aria-label="Mes cartes">
+      @for (hand of v.me.hands; track $index) {
+        <bj-hand [hand]="hand" />
+      }
+    </section>
+  </main>
+
+  <footer class="controls">
+    @switch (mode()) {
+      @case ('betting') {
+        @if (v.me.result; as last) {
+          <p class="reminder">
+            Manche précédente :
+            @if (last.sipsToDrink > 0) {
+              tu bois <strong>{{ last.sipsToDrink | sips }}</strong>
+            } @else {
+              rien à boire
+            }
+          </p>
+        }
+        <bj-bet-picker
+          [limits]="v.betLimits"
+          [currentBet]="v.me.bet"
+          [disabled]="store.busy()"
+          (betChosen)="placeBet($event)"
+        />
+      }
+      @case ('my-turn') {
+        <bj-action-bar
+          [allowedActions]="v.me.allowedActions"
+          [disabled]="store.busy()"
+          (actionChosen)="act($event)"
+        />
+      }
+      @case ('distributing') {
+        <bj-distribution-form
+          [total]="v.me.result!.sipsToDistribute"
+          [players]="v.others"
+          [disabled]="store.busy()"
+          (submitted)="distribute($event)"
+        />
+      }
+      @case ('distribution-wait') {
+        @if (v.me.result; as result) {
+          <bj-round-result [result]="result" />
+        } @else {
+          <p class="hint">Tu pourrais bien recevoir quelques gorgées…</p>
+        }
+      }
+      @case ('results') {
+        @if (v.me.result; as result) {
+          <bj-round-result [result]="result" />
+        } @else {
+          <p class="hint">La prochaine manche arrive.</p>
+        }
+      }
+      @case ('spectating') {
+        <p class="hint">Installe-toi, tu pourras miser dès la fin de cette manche.</p>
+      }
+      @default {
+        <p class="hint">Patience, ton tour arrive.</p>
+      }
+    }
+  </footer>
+} @else {
+  <div class="loading">
+    <p>Connexion à la table…</p>
+    <a class="btn btn--small btn--ghost" routerLink="/">Retour à l'accueil</a>
+  </div>
+}
+
+@if (store.error(); as error) {
+  <p class="toast" role="alert">{{ error }}</p>
+}

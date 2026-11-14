@@ -1,0 +1,47 @@
+@if (seat(); as s) {
+  <header class="head">
+    <span class="dot" [attr.title]="s.isConnected ? 'Connecté' : 'Déconnecté'"></span>
+    <span class="name">{{ s.name }}</span>
+    <button
+      type="button"
+      class="kick"
+      [attr.aria-label]="'Expulser ' + s.name"
+      title="Expulser"
+      (click)="kick.emit()"
+    >
+      ×
+    </button>
+  </header>
+
+  <div class="body">
+    @for (hand of s.hands; track $index) {
+      <bj-hand [hand]="hand" />
+    } @empty {
+      @if (s.bet) {
+        <span class="bet-chip">{{ s.bet }}</span>
+        <span class="idle">Mise : {{ s.bet | sips }}</span>
+      } @else {
+        <span class="idle">{{ idleText() }}</span>
+      }
+    }
+  </div>
+
+  @if (result(); as r) {
+    <p class="result" [class.is-clear]="r.sipsToDrink === 0">
+      @if (r.sipsToDrink > 0) {
+        Boit <strong>{{ r.sipsToDrink | sips }}</strong>
+      } @else {
+        Ne boit pas
+      }
+      @if (r.sipsToDistribute > 0 && r.canDistribute) {
+        <span class="result__give">
+          · {{ r.distributionDone ? 'a distribué' : 'distribue' }} {{ r.sipsToDistribute }}
+        </span>
+      }
+    </p>
+  }
+
+  <footer class="totals">Bu {{ s.totalDrunk }} · Donné {{ s.totalGiven }}</footer>
+} @else {
+  <span class="idle">Siège libre</span>
+}

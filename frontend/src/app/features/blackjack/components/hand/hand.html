@@ -1,0 +1,12 @@
+<div class="cards">
+  @for (card of hand().cards; track $index) {
+    <app-playing-card [card]="card" />
+  }
+</div>
+<div class="meta">
+  <span class="total">{{ total() }}</span>
+  <span class="bet">{{ hand().bet | sips }}</span>
+  @if (badge(); as status) {
+    <span class="badge badge--{{ status.tone }}">{{ status.label }}</span>
+  }
+</div>

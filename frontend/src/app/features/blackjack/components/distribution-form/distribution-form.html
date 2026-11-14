@@ -1,0 +1,51 @@
+<p class="remaining" [class.is-done]="remaining() === 0" aria-live="polite">
+  @if (remaining() > 0) {
+    Encore <strong>{{ remaining() | sips }}</strong> à distribuer
+  } @else {
+    Tout est réparti !
+  }
+</p>
+
+<ul class="rows">
+  @for (row of rows(); track row.player.id) {
+    <li class="row">
+      <button
+        type="button"
+        class="row__name"
+        [disabled]="disabled() || remaining() === 0"
+        [attr.aria-label]="'Donner tout le reste à ' + row.player.name"
+        (click)="giveRemaining(row.player.id)"
+      >
+        {{ row.player.name }}
+      </button>
+      <button
+        type="button"
+        class="btn step"
+        [disabled]="disabled() || row.sips === 0"
+        [attr.aria-label]="'Retirer une gorgée à ' + row.player.name"
+        (click)="change(row.player.id, -1)"
+      >
+        −
+      </button>
+      <span class="row__sips">{{ row.sips }}</span>
+      <button
+        type="button"
+        class="btn step"
+        [disabled]="disabled() || remaining() === 0"
+        [attr.aria-label]="'Donner une gorgée à ' + row.player.name"
+        (click)="change(row.player.id, 1)"
+      >
+        +
+      </button>
+    </li>
+  }
+</ul>
+
+<button
+  type="button"
+  class="btn btn--primary btn--block"
+  [disabled]="disabled() || remaining() !== 0"
+  (click)="submit()"
+>
+  Distribuer {{ total() | sips }}
+</button>

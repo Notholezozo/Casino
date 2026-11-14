@@ -1,0 +1,30 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  text-align: center;
+}
+
+.headline {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+
+  strong {
+    color: var(--gold-300);
+  }
+
+  &.is-clear {
+    color: var(--success);
+  }
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--ink-muted);
+  font-size: 0.95rem;
+}

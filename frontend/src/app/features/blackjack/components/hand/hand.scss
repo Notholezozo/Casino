@@ -1,0 +1,54 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  transition:
+    border-color 150ms ease,
+    opacity 150ms ease;
+}
+
+:host(.is-active) {
+  border-color: var(--gold-400);
+  background: rgba(233, 196, 106, 0.08);
+}
+
+:host(.is-lost) .cards {
+  opacity: 0.55;
+}
+
+.cards {
+  display: flex;
+  justify-content: center;
+  // Éventail : chaque carte recouvre la précédente pour tenir sur un téléphone.
+  > * + * {
+    margin-left: calc(var(--card-w) * -0.58);
+  }
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.total {
+  min-width: 2rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: var(--surface-strong);
+  font-weight: 800;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.bet {
+  font-size: 0.8rem;
+  color: var(--gold-300);
+  font-weight: 600;
+}

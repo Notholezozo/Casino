@@ -1,0 +1,125 @@
+@use 'mixins' as m;
+
+:host {
+  @include m.panel;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-height: 9rem;
+  padding: var(--space-3);
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+:host(.is-empty) {
+  align-items: center;
+  justify-content: center;
+  border-style: dashed;
+  background: transparent;
+}
+
+:host(.is-active) {
+  border-color: var(--gold-400);
+  box-shadow: 0 0 0 2px var(--gold-400), var(--shadow-raised);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.dot {
+  flex: none;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: var(--success);
+
+  :host(.is-offline) & {
+    background: var(--danger);
+  }
+}
+
+.name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 800;
+  font-size: 1.1rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  :host(.is-offline) & {
+    color: var(--ink-muted);
+  }
+}
+
+.kick {
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-muted);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--danger);
+    color: #fff;
+  }
+}
+
+.body {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.idle {
+  color: var(--ink-muted);
+  font-size: 0.9rem;
+}
+
+.bet-chip {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 3px dashed var(--ink-on-gold);
+  background: var(--gold-400);
+  color: var(--ink-on-gold);
+  font-weight: 800;
+}
+
+.result {
+  text-align: center;
+  font-weight: 700;
+
+  strong {
+    color: var(--gold-300);
+  }
+
+  &.is-clear {
+    color: var(--success);
+  }
+}
+
+.result__give {
+  font-weight: 400;
+  color: var(--ink-muted);
+}
+
+.totals {
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+}

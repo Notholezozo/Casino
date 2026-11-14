@@ -1,0 +1,23 @@
+# .NET
+bin/
+obj/
+*.user
+.vs/
+
+# Base SQLite locale et front compilé servi par l'API
+backend/src/Casino.Api/App_Data/
+backend/src/Casino.Api/wwwroot/*
+!backend/src/Casino.Api/wwwroot/.gitkeep
+publish/
+
+# Angular / Node
+node_modules/
+frontend/dist/
+frontend/.angular/
+
+# Éditeurs et OS
+.idea/
+.vscode/*
+!.vscode/extensions.json
+Thumbs.db
+.DS_Store

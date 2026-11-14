@@ -1,0 +1,56 @@
+<p class="status">
+  @switch (currentBet()) {
+    @case (null) {
+      Combien de gorgées mises-tu ?
+    }
+    @case (0) {
+      Tu passes cette manche. Tu peux encore changer d'avis.
+    }
+    @default {
+      Mise enregistrée : <strong>{{ currentBet()! | sips }}</strong>. Modifiable jusqu'à la donne.
+    }
+  }
+</p>
+
+<div class="chips" role="radiogroup" aria-label="Mise en gorgées">
+  @for (amount of amounts(); track amount) {
+    <button
+      type="button"
+      class="chip"
+      role="radio"
+      [class.is-selected]="selected() === amount"
+      [attr.aria-checked]="selected() === amount"
+      [disabled]="disabled()"
+      (click)="selected.set(amount)"
+    >
+      {{ amount }}
+    </button>
+  }
+</div>
+
+<div class="actions">
+  <button
+    type="button"
+    class="btn"
+    [disabled]="disabled() || currentBet() === 0"
+    (click)="pass()"
+  >
+    Passer
+  </button>
+  <button
+    type="button"
+    class="btn btn--primary"
+    [disabled]="disabled() || !canConfirm()"
+    (click)="confirm()"
+  >
+    @if (selected(); as amount) {
+      @if (amount === currentBet()) {
+        Mise : {{ amount | sips }}
+      } @else {
+        Miser {{ amount | sips }}
+      }
+    } @else {
+      Choisis ta mise
+    }
+  </button>
+</div>

@@ -1,0 +1,60 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.status {
+  text-align: center;
+  color: var(--ink-muted);
+  font-size: 0.95rem;
+
+  strong {
+    color: var(--gold-300);
+  }
+}
+
+.chips {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-2);
+  justify-items: center;
+}
+
+.chip {
+  width: 100%;
+  max-width: 3.75rem;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 3px dashed rgba(255, 255, 255, 0.55);
+  background: var(--felt-700);
+  font-weight: 800;
+  font-size: 1.15rem;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    transform 80ms ease,
+    background 120ms ease;
+
+  &:active:not(:disabled) {
+    transform: scale(0.94);
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  &.is-selected {
+    border-color: var(--ink-on-gold);
+    background: var(--gold-400);
+    color: var(--ink-on-gold);
+    box-shadow: 0 0 0 3px var(--gold-300);
+  }
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: var(--space-2);
+}

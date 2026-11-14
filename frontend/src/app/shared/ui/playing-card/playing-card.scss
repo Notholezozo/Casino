@@ -1,0 +1,70 @@
+:host {
+  position: relative;
+  display: block;
+  flex: none;
+  width: var(--card-w);
+  aspect-ratio: 5 / 7;
+  // Toutes les dimensions internes sont en em : elles suivent la largeur de la carte.
+  font-size: calc(var(--card-w) * 0.26);
+  border-radius: 0.5em;
+  background: var(--card-face);
+  color: var(--card-black);
+  box-shadow: var(--shadow-card);
+  animation: deal-in 260ms ease-out both;
+}
+
+:host(.is-red) {
+  color: var(--card-red);
+}
+
+:host(.is-back) {
+  border: 0.22em solid var(--card-face);
+  background:
+    repeating-linear-gradient(45deg, transparent 0 0.35em, rgba(255, 255, 255, 0.14) 0.35em 0.7em),
+    repeating-linear-gradient(-45deg, transparent 0 0.35em, rgba(255, 255, 255, 0.14) 0.35em 0.7em),
+    linear-gradient(#8f1d2c, #5e0f1b);
+}
+
+.corner {
+  position: absolute;
+  top: 0.3em;
+  left: 0.35em;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+  font-weight: 800;
+}
+
+.corner--bottom {
+  top: auto;
+  left: auto;
+  right: 0.35em;
+  bottom: 0.3em;
+  transform: rotate(180deg);
+}
+
+.rank {
+  font-size: 1em;
+  letter-spacing: -0.05em;
+}
+
+.suit {
+  font-size: 0.85em;
+}
+
+.pip {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 1.9em;
+  line-height: 1;
+}
+
+@keyframes deal-in {
+  from {
+    opacity: 0;
+    transform: translateY(-40%) rotate(-6deg);
+  }
+}

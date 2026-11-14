@@ -1,0 +1,45 @@
+:host {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: var(--countdown-size, 3rem);
+  aspect-ratio: 1;
+  color: var(--gold-400);
+}
+
+:host(.is-urgent) {
+  color: var(--danger);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.ring {
+  position: absolute;
+  inset: 0;
+  transform: rotate(-90deg);
+  fill: none;
+  stroke-width: 3;
+}
+
+.ring__track {
+  stroke: var(--border);
+}
+
+.ring__value {
+  stroke: currentColor;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 200ms linear;
+}
+
+.seconds {
+  font-weight: 800;
+  font-size: calc(var(--countdown-size, 3rem) * 0.38);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+@keyframes pulse {
+  50% {
+    transform: scale(1.08);
+  }
+}

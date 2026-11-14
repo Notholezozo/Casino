@@ -1,0 +1,30 @@
+@use 'sass:map';
+
+// Mobile d'abord : les styles de base ciblent le téléphone, `up()` élargit.
+
+$breakpoints: (
+  'sm': 30rem,
+  'md': 48rem,
+  'lg': 64rem,
+  'xl': 90rem,
+);
+
+@mixin up($name) {
+  @media (min-width: map.get($breakpoints, $name)) {
+    @content;
+  }
+}
+
+@mixin panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+@mixin label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}

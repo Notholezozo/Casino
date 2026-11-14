@@ -1,0 +1,96 @@
+@if (view(); as v) {
+  <header class="bar">
+    <div class="bar__code">
+      <span class="label">Code de la table</span>
+      <strong class="code">{{ v.tableCode }}</strong>
+    </div>
+
+    <div class="bar__phase" aria-live="polite">
+      <p class="phase">{{ phaseText() }}</p>
+      @if (store.deadline(); as deadline) {
+        <app-countdown [deadline]="deadline" />
+      }
+    </div>
+
+    <div class="bar__meta">
+      <span class="badge">Manche {{ v.roundNumber }}</span>
+      <span class="badge" title="Cartes restantes dans le sabot">
+        Sabot {{ v.shoe.remaining }} / {{ v.shoe.total }}
+      </span>
+      @if (store.hubStatus() !== 'connected') {
+        <span class="badge badge--danger">Reconnexion…</span>
+      }
+      <button
+        type="button"
+        class="btn btn--small btn--danger"
+        [disabled]="store.busy()"
+        (click)="closeTable()"
+      >
+        Fermer la table
+      </button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="dealer" aria-label="Croupier">
+      <bj-dealer-hand [dealer]="v.dealer" />
+    </section>
+
+    <section class="seats" aria-label="Joueurs">
+      @for (seat of seatSlots(); track seat?.playerId ?? 'free-' + $index) {
+        <bj-seat [seat]="seat" [phase]="v.phase" (kick)="kick(seat!)" />
+      }
+    </section>
+
+    <aside class="side">
+      @if (drinkers().length > 0) {
+        <section class="panel" aria-label="Bilan de la manche">
+          <h2 class="label">Bilan de la manche</h2>
+          <ul class="drinkers">
+            @for (drinker of drinkers(); track drinker.name) {
+              <li [class.is-clear]="drinker.sips === 0">
+                <span>{{ drinker.name }}</span>
+                <strong>{{ drinker.sips > 0 ? (drinker.sips | sips) : '—' }}</strong>
+              </li>
+            }
+          </ul>
+          @if (v.transfers.length > 0) {
+            <h3 class="label">Gorgées distribuées</h3>
+            <ul class="transfers">
+              @for (transfer of v.transfers; track $index) {
+                <li>
+                  {{ transfer.fromPlayerName }} → {{ transfer.toPlayerName }} :
+                  <strong>{{ transfer.sips }}</strong>
+                </li>
+              }
+            </ul>
+          }
+        </section>
+      }
+
+      <section class="panel invite" aria-label="Inviter des joueurs">
+        <h2 class="label">Rejoindre la partie</h2>
+        <app-qr-code [value]="inviteUrl" alt="QR code du lien d'invitation" />
+        <p class="invite__url">{{ inviteUrl }}</p>
+        <p class="invite__hint">
+          @if (isLocalOnly) {
+            Pour les téléphones, ouvre cette page via l'adresse réseau du PC (ex.
+            http://192.168.x.x:4200) : le QR code pointera alors au bon endroit.
+          } @else {
+            Scanne le QR code, ou ouvre le lien et saisis le code
+            <strong>{{ v.tableCode }}</strong>.
+          }
+        </p>
+      </section>
+    </aside>
+  </main>
+} @else {
+  <div class="loading">
+    <p>Connexion à la table…</p>
+    <a class="btn btn--small btn--ghost" routerLink="/">Retour à l'accueil</a>
+  </div>
+}
+
+@if (store.error(); as error) {
+  <p class="toast" role="alert">{{ error }}</p>
+}
