@@ -12,14 +12,14 @@ namespace Casino.Domain.Blackjack;
 /// thread-safe ; l'appelant sérialise les accès à une même table.
 /// </para>
 /// </summary>
-public sealed class BlackjackGame
+public sealed class BlackjackGame : ITableGame
 {
     private readonly BlackjackTimings _timings;
     private readonly IShoe _shoe;
     private readonly IRandomSource _random;
     private readonly List<Seat> _seats = [];
     private readonly List<Card> _dealerCards = [];
-    private readonly List<SipTransfer> _transfers = [];
+    private readonly List<DrinkTransfer> _transfers = [];
     private RoundSummary? _completedRound;
 
     public BlackjackGame(BlackjackRules rules, BlackjackTimings timings, IShoe shoe, IRandomSource random)
@@ -53,13 +53,19 @@ public sealed class BlackjackGame
     /// <summary>Vrai du règlement d'une manche jusqu'à la donne suivante : le bilan des sièges est lisible.</summary>
     public bool ResultsAvailable { get; private set; }
 
-    public IReadOnlyList<SipTransfer> Transfers => _transfers;
+    public IReadOnlyList<DrinkTransfer> Transfers => _transfers;
 
     public int ShoeRemaining => _shoe.Remaining;
 
     public int ShoeTotal => _shoe.Total;
 
     // ------------------------------------------------------------------ Joueurs
+
+    public int MaxPlayers => Rules.MaxPlayers;
+
+    public IReadOnlyList<TablePlayer> Players => _seats.Select(s => new TablePlayer(s.PlayerId, s.Name)).ToList();
+
+    void ITableGame.AddPlayer(Guid playerId, string name) => AddPlayer(playerId, name);
 
     public Seat AddPlayer(Guid playerId, string name)
     {
@@ -124,27 +130,48 @@ public sealed class BlackjackGame
 
     // ------------------------------------------------------------------ Mises
 
-    /// <summary>Pose ou modifie la mise du joueur. 0 = passer la manche.</summary>
-    public void PlaceBet(Guid playerId, int sips, DateTimeOffset now)
+    /// <summary>Pose ou modifie la mise du joueur : des gorgées, un cul sec, ou rien pour passer la manche.</summary>
+    public void PlaceBet(Guid playerId, Bet bet, DateTimeOffset now)
     {
         EnsurePhase(GamePhase.Betting);
         var seat = GetSeat(playerId);
+        EnsureValidBet(bet);
 
-        if (sips != 0 && (sips < Rules.MinBet || sips > Rules.MaxBet))
-        {
-            throw new GameRuleException(
-                "invalid_bet",
-                $"La mise doit être comprise entre {Rules.MinBet} et {Rules.MaxBet} gorgées, ou 0 pour passer.");
-        }
+        seat.Bet = bet.Amount;
+        seat.BetUnit = bet.Unit;
 
-        seat.Bet = sips;
-
-        if (sips > 0)
+        if (!bet.IsPass)
         {
             Deadline ??= now + _timings.Betting;
         }
 
         TryCloseBetting(now, deadlineReached: false);
+    }
+
+    private void EnsureValidBet(Bet bet)
+    {
+        if (bet.Unit == DrinkUnit.CulSec)
+        {
+            if (!Rules.AllowCulSec)
+            {
+                throw new GameRuleException("cul_sec_not_allowed", "Le cul sec n'est pas autorisé à cette table.");
+            }
+
+            // On mise un seul cul sec à la fois ; seul « doubler » peut en mettre deux en jeu.
+            if (bet.Amount != 1)
+            {
+                throw new GameRuleException("invalid_bet", "On ne peut miser qu'un cul sec à la fois.");
+            }
+
+            return;
+        }
+
+        if (!bet.IsPass && (bet.Amount < Rules.MinBet || bet.Amount > Rules.MaxBet))
+        {
+            throw new GameRuleException(
+                "invalid_bet",
+                $"La mise doit être comprise entre {Rules.MinBet} et {Rules.MaxBet} gorgées, ou 0 pour passer.");
+        }
     }
 
     private void TryCloseBetting(DateTimeOffset now, bool deadlineReached)
@@ -385,6 +412,9 @@ public sealed class BlackjackGame
 
         foreach (var seat in _seats)
         {
+            // Toutes les mains d'un joueur partagent l'unité de sa mise (gorgées ou culs secs).
+            seat.ResultUnit = seat.BetUnit;
+
             foreach (var hand in seat.Hands)
             {
                 var outcome = ResolveOutcome(hand, dealer, dealerBlackjack);
@@ -393,13 +423,13 @@ public sealed class BlackjackGame
                 switch (outcome)
                 {
                     case HandOutcome.Lose:
-                        seat.SipsLost += hand.Bet;
+                        seat.Lost += hand.Bet;
                         break;
                     case HandOutcome.Win:
-                        seat.SipsToDistribute += hand.Bet;
+                        seat.ToDistribute += hand.Bet;
                         break;
                     case HandOutcome.Blackjack:
-                        seat.SipsToDistribute += Rules.BlackjackPayout(hand.Bet);
+                        seat.ToDistribute += Rules.BlackjackPayout(hand.Bet);
                         break;
                 }
             }
@@ -410,7 +440,7 @@ public sealed class BlackjackGame
         var canDistribute = _seats.Count > 1;
         foreach (var seat in _seats)
         {
-            seat.DistributionDone = !(canDistribute && seat.SipsToDistribute > 0);
+            seat.DistributionDone = !(canDistribute && seat.ToDistribute > 0);
         }
 
         if (_seats.All(s => s.DistributionDone))
@@ -452,7 +482,10 @@ public sealed class BlackjackGame
             : HandOutcome.Push;
     }
 
-    /// <summary>Le gagnant répartit toutes ses gorgées entre les autres joueurs de la table.</summary>
+    /// <summary>
+    /// Le gagnant répartit tout ce qu'il a gagné entre les autres joueurs de la table.
+    /// Les quantités sont dans l'unité de sa mise (gorgées ou culs secs).
+    /// </summary>
     public void Distribute(Guid playerId, IReadOnlyDictionary<Guid, int> allocations, DateTimeOffset now)
     {
         EnsurePhase(GamePhase.Distribution);
@@ -460,14 +493,15 @@ public sealed class BlackjackGame
 
         if (seat.DistributionDone)
         {
-            throw new GameRuleException("nothing_to_distribute", "Tu n'as plus de gorgées à distribuer.");
+            throw new GameRuleException("nothing_to_distribute", "Tu n'as plus rien à distribuer.");
         }
 
-        if (allocations.Values.Any(sips => sips <= 0) || allocations.Values.Sum() != seat.SipsToDistribute)
+        if (allocations.Values.Any(amount => amount <= 0) || allocations.Values.Sum() != seat.ToDistribute)
         {
+            var what = seat.ResultUnit == DrinkUnit.CulSec ? "cul(s) sec(s)" : "gorgée(s)";
             throw new GameRuleException(
                 "invalid_distribution",
-                $"Tu dois distribuer exactement {seat.SipsToDistribute} gorgées.");
+                $"Tu dois distribuer exactement {seat.ToDistribute} {what}.");
         }
 
         if (allocations.Keys.Any(id => id == playerId || _seats.All(s => s.PlayerId != id)))
@@ -497,7 +531,7 @@ public sealed class BlackjackGame
             var shares = new int[others.Count];
             var start = _random.Next(others.Count);
 
-            for (var i = 0; i < seat.SipsToDistribute; i++)
+            for (var i = 0; i < seat.ToDistribute; i++)
             {
                 shares[(start + i) % others.Count]++;
             }
@@ -514,8 +548,8 @@ public sealed class BlackjackGame
         }
     }
 
-    private void AddTransfer(Seat from, Seat to, int sips) =>
-        _transfers.Add(new SipTransfer(from.PlayerId, from.Name, to.PlayerId, to.Name, sips));
+    private void AddTransfer(Seat from, Seat to, int amount) =>
+        _transfers.Add(new DrinkTransfer(from.PlayerId, from.Name, to.PlayerId, to.Name, amount, from.ResultUnit));
 
     private void EnterResults(DateTimeOffset now)
     {
@@ -524,18 +558,29 @@ public sealed class BlackjackGame
 
         foreach (var seat in _seats)
         {
-            seat.TotalDrunk += seat.SipsLost + _transfers.Where(t => t.ToPlayerId == seat.PlayerId).Sum(t => t.Sips);
-            seat.TotalGiven += _transfers.Where(t => t.FromPlayerId == seat.PlayerId).Sum(t => t.Sips);
+            var totals = seat.Totals.AddDrunk(seat.Lost, seat.ResultUnit);
+
+            foreach (var received in _transfers.Where(t => t.ToPlayerId == seat.PlayerId))
+            {
+                totals = totals.AddDrunk(received.Amount, received.Unit);
+            }
+
+            foreach (var given in _transfers.Where(t => t.FromPlayerId == seat.PlayerId))
+            {
+                totals = totals.AddGiven(given.Amount, given.Unit);
+            }
+
+            seat.Totals = totals;
         }
 
         _completedRound = new RoundSummary(
             RoundNumber,
             _dealerCards.ToList(),
             HandEvaluator.Evaluate(_dealerCards).Total,
-            _seats.SelectMany(s => s.Hands.Select(h =>
-                new RoundHandSummary(s.PlayerId, h.Cards.ToList(), h.Value.Total, h.Bet, h.Outcome!.Value))).ToList(),
+            _seats.SelectMany(s => s.Hands.Select(h => new RoundHandSummary(
+                s.PlayerId, h.Cards.ToList(), h.Value.Total, h.Bet, s.ResultUnit, h.Outcome!.Value))).ToList(),
             _transfers.ToList(),
-            _seats.Select(s => new PlayerTotals(s.PlayerId, s.TotalDrunk, s.TotalGiven)).ToList());
+            _seats.Select(s => new PlayerTotals(s.PlayerId, s.Totals)).ToList());
     }
 
     /// <summary>Renvoie la manche qui vient de se terminer, une seule fois, pour l'enregistrer dans l'historique.</summary>
@@ -610,6 +655,7 @@ public sealed class BlackjackGame
             _shoe.Discard(seat.Hands.SelectMany(h => h.Cards));
             seat.MutableHands.Clear();
             seat.Bet = null;
+            seat.BetUnit = DrinkUnit.Sip;
             seat.InRound = false;
         }
     }

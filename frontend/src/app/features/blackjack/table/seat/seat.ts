@@ -1,23 +1,26 @@
 import { Component, computed, input, output } from '@angular/core';
 import { GamePhase, Seat } from '../../../../core/models/blackjack.models';
-import { SipsPipe } from '../../../../shared/pipes/sips-pipe';
+import { DrinksPipe, formatToDrink } from '../../../../shared/pipes/drinks-pipe';
 import { HandView } from '../../components/hand/hand';
 
-/** Un siège de la table vu par l'admin : joueur, mains, mise et bilan. Sans `seat`, siège libre. */
+/** Une place de la table vue par l'admin : joueur, mains, mise et bilan. Sans `seat`, place libre. */
 @Component({
   selector: 'bj-seat',
-  imports: [HandView, SipsPipe],
+  imports: [DrinksPipe, HandView],
   templateUrl: './seat.html',
   styleUrl: './seat.scss',
   host: {
     '[class.is-empty]': '!seat()',
     '[class.is-active]': 'seat()?.isActive',
     '[class.is-offline]': 'seat() && !seat()!.isConnected',
+    '[class.has-split]': '(seat()?.hands?.length ?? 0) > 1',
   },
 })
 export class SeatView {
   readonly seat = input<Seat | null>(null);
   readonly phase = input.required<GamePhase>();
+  /** Position autour de la table (0 = servi en premier), pour l'ordre de distribution. */
+  readonly dealRank = input(0);
 
   readonly kick = output<void>();
 
@@ -28,10 +31,10 @@ export class SeatView {
       return '';
     }
     if (this.phase() !== 'Betting') {
-      return 'Attend la prochaine manche';
+      return 'Hors manche';
     }
     if (seat.bet === null) {
-      return 'Réfléchit…';
+      return 'Choisit sa mise';
     }
     return seat.bet === 0 ? 'Passe' : '';
   });
@@ -40,5 +43,11 @@ export class SeatView {
   protected readonly result = computed(() => {
     const phase = this.phase();
     return phase === 'Distribution' || phase === 'Results' ? (this.seat()?.result ?? null) : null;
+  });
+
+  /** « 3 gorgées et 1 cul sec », ou null s'il n'y a rien à boire. */
+  protected readonly toDrink = computed(() => {
+    const result = this.result();
+    return result ? formatToDrink(result.sipsToDrink, result.culsSecsToDrink) : null;
   });
 }

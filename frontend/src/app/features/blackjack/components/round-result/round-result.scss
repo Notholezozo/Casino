@@ -1,16 +1,17 @@
+@use 'mixins' as m;
+
 :host {
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: var(--space-2);
   text-align: center;
 }
 
 .headline {
-  font-family: var(--font-display);
-  font-size: 1.6rem;
+  font: 600 24px/30px var(--font-display);
 
   strong {
-    color: var(--gold-300);
+    color: var(--gold);
+    font-weight: 700;
   }
 
   &.is-clear {
@@ -19,12 +20,11 @@
 }
 
 .details {
-  display: flex;
-  flex-direction: column;
+  @include m.body-sm;
+  display: grid;
   gap: var(--space-1);
   margin: 0;
   padding: 0;
   list-style: none;
   color: var(--ink-muted);
-  font-size: 0.95rem;
 }

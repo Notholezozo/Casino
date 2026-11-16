@@ -1,10 +1,12 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, effect, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Seat, TableView } from '../../../core/models/blackjack.models';
 import { SessionStore } from '../../../core/session/session-store';
-import { SipsPipe } from '../../../shared/pipes/sips-pipe';
-import { Countdown } from '../../../shared/ui/countdown/countdown';
-import { QrCode } from '../../../shared/ui/qr-code/qr-code';
+import { formatDrinks } from '../../../shared/pipes/drinks-pipe';
+import { DealerMood } from '../../../shared/ui/dealer-3d/dealer-3d';
+import { DealSequencer } from '../../../shared/ui/dealing/deal-sequencer';
+import { seatPositions } from '../../table-layout/table-geometry';
+import { TableLayout } from '../../table-layout/table-layout';
 import { DealerHand } from '../components/dealer-hand/dealer-hand';
 import { TableStore } from '../state/table-store';
 import { SeatView } from './seat/seat';
@@ -15,25 +17,28 @@ function describePhase(view: TableView, hasTimer: boolean): string {
       if (view.seats.length === 0) {
         return 'En attente de joueurs';
       }
-      return hasTimer ? 'Faites vos jeux !' : 'En attente des mises';
+      return hasTimer ? 'Faites vos jeux' : 'En attente des mises';
     case 'PlayerTurns': {
       const active = view.seats.find((seat) => seat.playerId === view.activePlayerId);
       return active ? `Au tour de ${active.name}` : 'Tour des joueurs';
     }
     case 'DealerTurn':
-      return 'Le croupier joue';
+      return 'Le dealer joue';
     case 'Distribution':
-      return 'Distribution des gorgées';
+      return 'Les gagnants distribuent';
     case 'Results':
       return 'Bilan de la manche';
   }
 }
 
-/** Page table (admin) : écran partagé qui montre tous les sièges et toutes les cartes. */
+/**
+ * Page table du blackjack (admin) : écran partagé qui montre toutes les places et toutes
+ * les cartes. La mise en page vient de TableLayout ; ici, seulement ce qui est propre au jeu.
+ */
 @Component({
   selector: 'bj-table-page',
-  imports: [Countdown, DealerHand, QrCode, RouterLink, SeatView, SipsPipe],
-  providers: [TableStore],
+  imports: [DealerHand, RouterLink, SeatView, TableLayout],
+  providers: [TableStore, DealSequencer],
   templateUrl: './table-page.html',
   styleUrl: './table-page.scss',
 })
@@ -41,45 +46,66 @@ export class TablePage {
   protected readonly store = inject(TableStore);
   protected readonly view = this.store.view;
 
-  /** Lien d'invitation : l'accueil avec le code prérempli. */
-  protected readonly inviteUrl: string;
-  /** Sur localhost, le QR code ne mène nulle part depuis un téléphone. */
-  protected readonly isLocalOnly = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
-
   protected readonly phaseText = computed(() => {
     const view = this.view();
     return view ? describePhase(view, this.store.deadline() !== null) : '';
   });
 
-  /** Sièges occupés complétés par des sièges libres jusqu'à la capacité de la table. */
-  protected readonly seatSlots = computed<(Seat | null)[]>(() => {
+  /** Les places de la table, occupées ou libres, avec leur position sur l'arc. */
+  protected readonly seatSlots = computed(() => {
     const view = this.view();
     if (!view) {
       return [];
     }
-    const free = Math.max(view.maxPlayers - view.seats.length, 0);
-    return [...view.seats, ...Array.from({ length: free }, () => null)];
+    return seatPositions(view.maxPlayers).map((position, index) => ({
+      seat: view.seats[index] ?? null,
+      position,
+      index,
+    }));
   });
 
-  /** Qui boit combien cette manche, du plus au moins assoiffé. */
-  protected readonly drinkers = computed(() => {
-    const view = this.view();
-    if (!view || (view.phase !== 'Distribution' && view.phase !== 'Results')) {
-      return [];
+  /** Le dealer fait la tête quand il saute, et jubile sur un blackjack. */
+  protected readonly dealerMood = computed<DealerMood>(() => {
+    const dealer = this.view()?.dealer;
+    if (dealer?.isBust) {
+      return 'sad';
     }
-    return view.seats
-      .filter((seat) => seat.result !== null)
-      .map((seat) => ({ name: seat.name, sips: seat.result!.sipsToDrink }))
-      .sort((a, b) => b.sips - a.sips);
+    return dealer?.isBlackjack ? 'happy' : 'idle';
+  });
+
+  /** « 2 à 5 gorgées, ou cul sec ». */
+  protected readonly limitsText = computed(() => {
+    const limits = this.view()?.betLimits;
+    if (!limits) {
+      return '';
+    }
+    const range =
+      limits.min === limits.max
+        ? formatDrinks(limits.max)
+        : `${limits.min} à ${formatDrinks(limits.max)}`;
+    return limits.allowCulSec ? `${range}, ou cul sec` : range;
+  });
+
+  protected readonly shoePercent = computed(() => {
+    const shoe = this.view()?.shoe;
+    return shoe && shoe.total > 0 ? Math.round((shoe.remaining / shoe.total) * 100) : 0;
   });
 
   constructor() {
     // Le garde de route garantit la session admin de cette table.
     const session = inject(SessionStore).session();
-    this.inviteUrl = `${location.origin}/?code=${encodeURIComponent(session?.code ?? '')}`;
     if (session?.role === 'admin') {
       this.store.connect(session);
     }
+
+    // Les cartes déjà sur la table à l'arrivée ne sont pas redistribuées : on n'anime
+    // qu'à partir du moment où le premier état est affiché.
+    const sequencer = inject(DealSequencer);
+    effect(() => {
+      if (this.view()) {
+        setTimeout(() => sequencer.arm());
+      }
+    });
   }
 
   protected kick(seat: Seat): void {

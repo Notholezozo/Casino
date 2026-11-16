@@ -13,7 +13,7 @@ public sealed class CasinoDbContext(DbContextOptions<CasinoDbContext> options) :
 
     public DbSet<RoundHand> RoundHands => Set<RoundHand>();
 
-    public DbSet<RoundSipTransfer> RoundSipTransfers => Set<RoundSipTransfer>();
+    public DbSet<RoundDrinkTransfer> RoundDrinkTransfers => Set<RoundDrinkTransfer>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) =>
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(CasinoDbContext).Assembly);

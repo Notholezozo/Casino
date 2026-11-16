@@ -23,15 +23,16 @@ internal static class BlackjackViewMapper
                 seat.Name,
                 seat.IsConnected,
                 seat.Bet,
+                seat.BetUnit,
                 seat.InRound,
                 ToHands(game, seat),
                 ReferenceEquals(seat, game.ActiveSeat),
                 ToResult(game, seat),
-                seat.TotalDrunk,
-                seat.TotalGiven)).ToList(),
+                ToTotals(seat.Totals))).ToList(),
             game.ActiveSeat?.PlayerId,
             game.Rules.MaxPlayers,
             new ShoeDto(game.ShoeRemaining, game.ShoeTotal),
+            ToLimits(game.Rules),
             game.ResultsAvailable ? game.Transfers.Select(ToTransfer).ToList() : []);
 
     public static PlayerViewDto ToPlayerView(
@@ -47,19 +48,19 @@ internal static class BlackjackViewMapper
                 seat.PlayerId,
                 seat.Name,
                 seat.Bet,
+                seat.BetUnit,
                 seat.InRound,
                 ToHands(game, seat),
                 ReferenceEquals(seat, game.ActiveSeat),
                 game.GetAllowedActions(seat.PlayerId),
                 ToResult(game, seat),
-                seat.TotalDrunk,
-                seat.TotalGiven),
+                ToTotals(seat.Totals)),
             game.Seats
                 .Where(other => !ReferenceEquals(other, seat))
                 .Select(other => new OtherPlayerDto(other.PlayerId, other.Name, other.IsConnected, other.InRound))
                 .ToList(),
             game.ActiveSeat?.PlayerId,
-            new BetLimitsDto(game.Rules.MinBet, game.Rules.MaxBet));
+            ToLimits(game.Rules));
 
     private static int? RemainingMs(BlackjackGame game, DateTimeOffset now) =>
         game.Deadline is { } deadline
@@ -87,6 +88,7 @@ internal static class BlackjackViewMapper
             hand.Value.Total,
             hand.Value.IsSoft,
             hand.Bet,
+            seat.BetUnit,
             hand.Status,
             hand.Outcome,
             ReferenceEquals(hand, game.ActiveHand))).ToList();
@@ -98,21 +100,33 @@ internal static class BlackjackViewMapper
             return null;
         }
 
-        var received = game.Transfers.Where(t => t.ToPlayerId == seat.PlayerId).Select(ToTransfer).ToList();
-        var given = game.Transfers.Where(t => t.FromPlayerId == seat.PlayerId).Select(ToTransfer).ToList();
+        var received = game.Transfers.Where(t => t.ToPlayerId == seat.PlayerId).ToList();
+        var given = game.Transfers.Where(t => t.FromPlayerId == seat.PlayerId).ToList();
+
+        // À boire, par unité : ce que le joueur a perdu lui-même, plus ce que les autres lui ont donné.
+        int ToDrink(DrinkUnit unit) =>
+            (seat.ResultUnit == unit ? seat.Lost : 0) + received.Where(t => t.Unit == unit).Sum(t => t.Amount);
 
         return new RoundResultDto(
-            seat.SipsLost,
-            seat.SipsToDistribute,
+            seat.ResultUnit,
+            seat.Lost,
+            seat.ToDistribute,
             CanDistribute: game.Seats.Count > 1,
             seat.DistributionDone,
-            received,
-            given,
-            SipsToDrink: seat.SipsLost + received.Sum(t => t.Sips));
+            received.Select(ToTransfer).ToList(),
+            given.Select(ToTransfer).ToList(),
+            SipsToDrink: ToDrink(DrinkUnit.Sip),
+            CulsSecsToDrink: ToDrink(DrinkUnit.CulSec));
     }
+
+    private static BetLimitsDto ToLimits(BlackjackRules rules) =>
+        new(rules.MinBet, rules.MaxBet, rules.AllowCulSec);
+
+    private static DrinkTotalsDto ToTotals(DrinkTotals totals) =>
+        new(totals.SipsDrunk, totals.SipsGiven, totals.CulsSecsDrunk, totals.CulsSecsGiven);
 
     private static CardDto ToCard(Card card) => new(card.RankLabel, card.Suit.ToString());
 
-    private static SipTransferDto ToTransfer(SipTransfer t) =>
-        new(t.FromPlayerId, t.FromPlayerName, t.ToPlayerId, t.ToPlayerName, t.Sips);
+    private static DrinkTransferDto ToTransfer(DrinkTransfer t) =>
+        new(t.FromPlayerId, t.FromPlayerName, t.ToPlayerId, t.ToPlayerName, t.Amount, t.Unit);
 }

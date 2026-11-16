@@ -1,4 +1,5 @@
 using Casino.Application.Blackjack;
+using Casino.Application.Poker;
 using Casino.Application.Tables;
 using Casino.Domain.Cards;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,7 +19,10 @@ public static class DependencyInjection
 
         services.AddScoped<ISnapshotDispatcher, SnapshotDispatcher>();
         services.AddScoped<ITableService, TableService>();
+        services.AddScoped<IGameFactory, GameFactory>();
+        services.AddScoped<IGameCommandRunner, GameCommandRunner>();
         services.AddScoped<IBlackjackService, BlackjackService>();
+        services.AddScoped<IPokerService, PokerService>();
         services.AddScoped<IGameClock, GameClock>();
 
         return services;

@@ -1,0 +1,53 @@
+@if (view(); as v) {
+  <app-table-layout
+    title="Poker"
+    [roundLabel]="'Main ' + v.handNumber"
+    [phaseText]="phaseText()"
+    [deadline]="store.deadline()"
+    [reconnecting]="store.hubStatus() !== 'connected'"
+    [tableCode]="v.tableCode"
+    [players]="v.seats"
+    [transfers]="v.transfers"
+    [lobby]="v.handNumber === 0"
+    [busy]="store.busy()"
+    [dealerMood]="dealerMood()"
+    feltTitle="Texas Hold'em"
+    feltRule="Winner hands out the pot"
+    (closeTable)="closeTable()"
+  >
+    <div tableMeter class="meter">
+      <div class="meter__row">
+        <span>Blindes</span>
+        <span>{{ v.limits.smallBlind }} / {{ v.limits.bigBlind }}</span>
+      </div>
+      <div class="meter__row">
+        <span>Relance</span>
+        <span>{{ v.limits.minRaise }} à {{ v.limits.maxRaise }}</span>
+      </div>
+      <p class="meter__note">En gorgées. Le gagnant distribue le pot.</p>
+    </div>
+
+    <pk-board tableDealer [board]="v.board" [pot]="v.pot" />
+
+    @for (slot of seatSlots(); track slot.seat?.playerId ?? 'free-' + slot.index) {
+      <pk-seat
+        class="table-seat"
+        [seat]="slot.seat"
+        [phase]="v.phase"
+        [dealRank]="slot.index"
+        [style.--x]="slot.position.x + '%'"
+        [style.--y]="slot.position.y + '%'"
+        (kick)="kick(slot.seat!)"
+      />
+    }
+  </app-table-layout>
+} @else {
+  <div class="loading">
+    <p>Connexion à la table…</p>
+    <a class="btn btn--ghost" routerLink="/">Retour à l'accueil</a>
+  </div>
+}
+
+@if (store.error(); as error) {
+  <p class="toast" role="alert">Erreur : {{ error }}</p>
+}

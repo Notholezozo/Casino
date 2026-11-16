@@ -1,51 +1,37 @@
 @use 'mixins' as m;
 
-:host {
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  min-height: 100dvh;
-  max-width: 40rem;
-  margin: 0 auto;
-  --card-w: 4.25rem;
+// L'en-tête, la colonne et la barre d'actions viennent de PlayerShell (features/table-layout).
+// Ici : les blocs de tapis propres au blackjack.
 
-  @include m.up('md') {
-    --card-w: 5.25rem;
-  }
+.zone {
+  @include m.player-zone;
 }
 
-.topbar {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: calc(var(--space-2) + env(safe-area-inset-top)) var(--space-3) var(--space-2);
+.dealer {
+  @include m.player-dealer-zone('.dealer__avatar');
 }
 
-.identity {
-  display: flex;
-  flex-direction: column;
+.me {
   flex: 1;
-  min-width: 0;
+  align-content: center;
 }
 
-.identity__name {
-  font-weight: 800;
-  font-size: 1.05rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.zone__label {
+  color: var(--on-felt);
 }
 
-.identity__meta {
-  font-size: 0.78rem;
-  color: var(--ink-muted);
+.zone__empty {
+  @include m.body-sm;
+  opacity: 0.8;
 }
 
-.felt {
+.hands {
   display: flex;
-  flex-direction: column;
-  justify-content: space-evenly;
-  gap: var(--space-3);
-  padding: var(--space-3);
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: calc(var(--card-w) * 1.4 + 20px);
 }
 
 .status {
@@ -53,43 +39,22 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-3);
-  min-height: 3.25rem;
+  min-height: var(--tap-min);
 }
 
 .status__text {
-  font-family: var(--font-display);
-  font-size: 1.3rem;
+  font: 600 20px/26px var(--font-display);
   text-align: center;
-}
-
-.hands {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: var(--space-2);
-  min-height: calc(var(--card-w) * 1.4 + 3rem);
-}
-
-.controls {
-  position: sticky;
-  bottom: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-4) var(--space-3) calc(var(--space-4) + env(safe-area-inset-bottom));
-  border-top: 1px solid var(--border);
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  background: var(--surface-strong);
-  backdrop-filter: blur(8px);
 }
 
 .reminder {
+  @include m.body-sm;
   text-align: center;
-  font-size: 0.85rem;
   color: var(--ink-muted);
 
   strong {
-    color: var(--gold-300);
+    color: var(--gold);
+    font-weight: 700;
   }
 }
 
@@ -100,10 +65,9 @@
 }
 
 .loading {
-  grid-row: 1 / -1;
-  align-self: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  display: grid;
+  place-content: center;
+  justify-items: center;
   gap: var(--space-4);
+  min-height: 100dvh;
 }

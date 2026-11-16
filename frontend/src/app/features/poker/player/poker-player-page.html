@@ -1,0 +1,132 @@
+@if (view(); as v) {
+  @let self = me();
+
+  <app-player-shell
+    [name]="self?.name ?? ''"
+    [tableCode]="v.tableCode"
+    [totals]="self?.totals ?? { sipsDrunk: 0, sipsGiven: 0, culsSecsDrunk: 0, culsSecsGiven: 0 }"
+    [reconnecting]="store.hubStatus() !== 'connected'"
+    (leave)="leave()"
+  >
+    <section class="zone dealer" aria-label="Cartes communes">
+      <bj-dealer-avatar class="dealer__avatar" compact />
+      <pk-board class="board" [board]="v.board" [pot]="v.pot" />
+    </section>
+
+    <section class="status" aria-live="polite">
+      <p class="status__text">{{ statusText() }}</p>
+      @if (store.deadline(); as deadline) {
+        <app-countdown [deadline]="deadline" />
+      }
+    </section>
+
+    <section class="zone me" aria-label="Tes cartes">
+      <span class="label zone__label">
+        Tes cartes
+        @if (myRole(); as role) {
+          · {{ role }}
+        }
+      </span>
+      @if (self?.cards; as cards) {
+        <div class="hand" [class.is-folded]="self?.folded">
+          <div class="cards">
+            @for (card of cards; track card.rank + card.suit) {
+              <app-playing-card [card]="card" [dealOrder]="$index" />
+            }
+          </div>
+          <div class="hand__meta">
+            @if (self?.folded) {
+              <span class="badge badge--burgundy">Fold</span>
+            } @else if (self?.isWinner) {
+              <span class="badge badge--solid">Win</span>
+            }
+            @if (self?.handName; as handName) {
+              <p class="hand__name">{{ handName }}</p>
+            }
+            <p class="hand__bet">
+              Mise : <strong>{{ self?.totalBet ?? 0 | drinks }}</strong>
+            </p>
+          </div>
+        </div>
+      } @else {
+        <p class="zone__empty">Pas de cartes pour cette main.</p>
+      }
+
+      <!-- Les autres joueurs : jamais leurs cartes avant l'abattage. -->
+      <ul class="others">
+        @for (other of others(); track other.seat.playerId) {
+          <li [class.is-active]="other.seat.isActive" [class.is-out]="other.seat.folded || !other.seat.inHand">
+            <span class="others__name">{{ other.seat.name }}</span>
+            @if (other.role) {
+              <span class="badge badge--felt others__role">{{ other.role }}</span>
+            }
+            <span class="others__state">
+              @if (!other.seat.inHand) {
+                hors main
+              } @else if (other.seat.folded) {
+                Fold
+              } @else if (other.seat.handName) {
+                {{ other.seat.handName }}
+              } @else {
+                {{ other.seat.totalBet | drinks }}
+              }
+            </span>
+          </li>
+        }
+      </ul>
+    </section>
+
+    <ng-container ngProjectAs="[playerControls]">
+      @switch (mode()) {
+        @case ('my-turn') {
+          <pk-action-bar
+            [allowedActions]="v.me.allowedActions"
+            [amountToCall]="v.me.amountToCall"
+            [limits]="v.limits"
+            [disabled]="store.busy()"
+            (actionChosen)="act($event)"
+          />
+        }
+        @case ('distributing') {
+          <bj-distribution-form
+            [total]="self!.toDistribute"
+            [players]="recipients()"
+            [disabled]="store.busy()"
+            (submitted)="distribute($event)"
+          />
+        }
+        @case ('summary') {
+          <p class="headline" [class.is-clear]="!self?.sipsToDrink">
+            @if (self?.isWinner) {
+              Pot gagné :
+              <strong>{{ self!.toDistribute | drinks }}</strong>
+              {{ self!.distributionDone ? 'distribuées' : 'à distribuer' }}
+            } @else if (self?.sipsToDrink) {
+              Tu bois <strong>{{ self!.sipsToDrink | drinks }}</strong>
+            } @else {
+              Rien à boire
+            }
+          </p>
+        }
+        @case ('waiting-turn') {
+          <p class="hint">Patience, ton tour arrive. Enchère en cours : {{ v.currentBet | drinks }}.</p>
+        }
+        @case ('sitting-out') {
+          <p class="hint">Tu ne joues plus cette main. La prochaine arrive.</p>
+        }
+        @default {
+          <p class="hint">Les cartes arrivent dès que deux joueurs sont là.</p>
+        }
+      }
+    </ng-container>
+  </app-player-shell>
+} @else {
+  <div class="loading">
+    <p>Connexion à la table…</p>
+    <a class="btn btn--ghost" routerLink="/">Retour à l'accueil</a>
+  </div>
+}
+
+@if (store.error(); as error) {
+  <p class="toast" role="alert">Erreur : {{ error }}</p>
+}

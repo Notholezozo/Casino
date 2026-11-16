@@ -3,6 +3,7 @@ namespace Casino.Domain.Entities;
 public enum GameType
 {
     Blackjack,
+    Poker,
 }
 
 /// <summary>Table de jeu (room) telle qu'elle est enregistrée en base.</summary>
@@ -19,6 +20,14 @@ public sealed class GameTable
 
     /// <summary>Null tant que la table est ouverte.</summary>
     public DateTime? ClosedAtUtc { get; set; }
+
+    /// <summary>Mise minimale en gorgées, choisie à la création.</summary>
+    public int MinBet { get; set; }
+
+    /// <summary>Mise maximale en gorgées, choisie à la création.</summary>
+    public int MaxBet { get; set; }
+
+    public bool AllowCulSec { get; set; }
 
     public List<Player> Players { get; set; } = [];
 
@@ -38,7 +47,13 @@ public sealed class Player
 
     public DateTime? LeftAtUtc { get; set; }
 
+    /// <summary>Gorgées bues depuis l'arrivée à la table.</summary>
     public int TotalDrunk { get; set; }
 
+    /// <summary>Gorgées distribuées depuis l'arrivée à la table.</summary>
     public int TotalGiven { get; set; }
+
+    public int TotalCulsSecsDrunk { get; set; }
+
+    public int TotalCulsSecsGiven { get; set; }
 }

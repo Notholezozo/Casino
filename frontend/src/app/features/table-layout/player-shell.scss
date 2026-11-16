@@ -1,0 +1,76 @@
+@use 'mixins' as m;
+
+// Vue joueur : une colonne de --sheet-max au plus, actions en bas sous le pouce.
+
+:host {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: 100dvh;
+  max-width: var(--sheet-max);
+  margin: 0 auto;
+  --card-w: 64px;
+
+  // Petit téléphone : des cartes un peu plus petites pour garder la main au-dessus des actions.
+  @media (max-height: 700px) {
+    --card-w: 56px;
+  }
+
+  @include m.up('sm') {
+    --card-w: 80px;
+  }
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: calc(var(--space-3) + env(safe-area-inset-top)) var(--space-4) var(--space-3);
+
+  .btn {
+    padding: 0 var(--space-3);
+  }
+}
+
+.who {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.who__name {
+  font: 600 20px/26px var(--font-display);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topbar__side {
+  flex: 1;
+  display: grid;
+  justify-items: end;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.tally {
+  @include m.caption;
+  color: var(--ink-muted);
+  text-align: right;
+}
+
+.table {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: 0 var(--space-4) var(--space-4);
+}
+
+.controls {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-4) calc(var(--space-4) + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  background: var(--surface-200);
+}

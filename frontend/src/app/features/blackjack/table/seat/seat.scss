@@ -1,27 +1,41 @@
 @use 'mixins' as m;
 
+// Place d'un joueur : un rectangle de tapis ombré, posé sur la table.
+
 :host {
-  @include m.panel;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  align-content: start;
   gap: var(--space-2);
-  min-height: 9rem;
-  padding: var(--space-3);
-  transition:
-    border-color 150ms ease,
-    box-shadow 150ms ease;
+  min-width: 0;
+  padding: var(--space-2) var(--space-2) var(--space-3);
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--felt-deep);
+  color: var(--on-felt);
+  transition: border-color 160ms ease-out;
 }
 
+// Comme la case de mise d'une vraie table.
 :host(.is-empty) {
-  align-items: center;
-  justify-content: center;
-  border-style: dashed;
+  align-content: center;
+  justify-items: center;
+  min-height: 120px;
+  border: 2px dashed var(--on-felt);
   background: transparent;
+  opacity: 0.55;
 }
 
+// Le tour se signale par un cadre or, pas par une animation.
 :host(.is-active) {
-  border-color: var(--gold-400);
-  box-shadow: 0 0 0 2px var(--gold-400), var(--shadow-raised);
+  border-color: var(--gold-fill);
+}
+
+// Plusieurs mains après un split : des cartes plus petites, et la place s'élargit autour
+// de son centre (quitte à passer devant ses voisines) plutôt que d'empiler les mains.
+:host(.has-split) {
+  --card-w: calc(var(--seat-card-w, 44px) * 0.8);
+  z-index: 1;
+  min-width: max-content;
 }
 
 .head {
@@ -30,96 +44,78 @@
   gap: var(--space-2);
 }
 
-.dot {
+// Présence : pastille pleine si connecté, creuse sinon (pas seulement une couleur).
+.presence {
   flex: none;
-  width: 0.6rem;
-  height: 0.6rem;
-  border-radius: 50%;
-  background: var(--success);
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--on-felt);
+  border-radius: var(--radius-full);
+  background: var(--on-felt);
 
   :host(.is-offline) & {
-    background: var(--danger);
+    background: transparent;
   }
 }
 
 .name {
   flex: 1;
   min-width: 0;
-  font-weight: 800;
-  font-size: 1.1rem;
+  font: 600 18px/24px var(--font-display);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 
   :host(.is-offline) & {
-    color: var(--ink-muted);
+    opacity: 0.6;
   }
 }
 
 .kick {
   flex: none;
-  width: 2rem;
-  height: 2rem;
+  width: 28px;
+  height: 28px;
+  margin: -2px -6px -2px 0;
+  padding: 0;
   border: 0;
-  border-radius: 50%;
+  border-radius: var(--radius-sm);
   background: transparent;
-  color: var(--ink-muted);
-  font-size: 1.25rem;
+  color: var(--on-felt);
+  font-size: 20px;
   line-height: 1;
+  opacity: 0.6;
   cursor: pointer;
+  transition:
+    background-color 160ms ease-out,
+    opacity 160ms ease-out;
 
-  &:hover {
-    background: var(--danger);
-    color: #fff;
+  &:hover,
+  &:focus-visible {
+    background: var(--burgundy);
+    color: var(--on-burgundy);
+    opacity: 1;
   }
 }
 
 .body {
-  flex: 1;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
+  min-height: calc(var(--card-w) * 1.4);
 }
 
-.idle {
-  color: var(--ink-muted);
-  font-size: 0.9rem;
-}
-
-.bet-chip {
-  display: grid;
-  place-items: center;
-  width: 2.75rem;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  border: 3px dashed var(--ink-on-gold);
-  background: var(--gold-400);
-  color: var(--ink-on-gold);
-  font-weight: 800;
-}
-
+.idle,
 .result {
+  @include m.body-sm;
   text-align: center;
-  font-weight: 700;
 
   strong {
-    color: var(--gold-300);
-  }
-
-  &.is-clear {
-    color: var(--success);
+    font-weight: 700;
   }
 }
 
-.result__give {
-  font-weight: 400;
-  color: var(--ink-muted);
-}
-
-.totals {
-  text-align: center;
-  font-size: 0.78rem;
-  color: var(--ink-muted);
+.free {
+  @include m.label;
+  color: var(--on-felt);
 }

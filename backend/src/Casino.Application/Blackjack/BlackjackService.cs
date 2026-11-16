@@ -8,24 +8,17 @@ namespace Casino.Application.Blackjack;
 /// <summary>Cas d'usage du blackjack : relaie les décisions des joueurs au moteur et diffuse le résultat.</summary>
 public interface IBlackjackService
 {
-    Task PlaceBetAsync(SessionIdentity player, int sips, CancellationToken ct = default);
+    Task PlaceBetAsync(SessionIdentity player, Bet bet, CancellationToken ct = default);
 
     Task ActAsync(SessionIdentity player, PlayerAction action, CancellationToken ct = default);
 
-    Task DistributeAsync(SessionIdentity player, IReadOnlyList<SipAllocationDto>? allocations, CancellationToken ct = default);
-
-    PlayerViewDto GetPlayerView(SessionIdentity player);
-
-    TableViewDto GetTableView(SessionIdentity admin);
+    Task DistributeAsync(SessionIdentity player, IReadOnlyList<DrinkAllocationDto>? allocations, CancellationToken ct = default);
 }
 
-internal sealed class BlackjackService(
-    ITableRegistry registry,
-    ISnapshotDispatcher dispatcher,
-    TimeProvider clock) : IBlackjackService
+internal sealed class BlackjackService(IGameCommandRunner runner) : IBlackjackService
 {
-    public Task PlaceBetAsync(SessionIdentity player, int sips, CancellationToken ct = default) =>
-        ExecuteAsync(player, (game, playerId, now) => game.PlaceBet(playerId, sips, now), ct);
+    public Task PlaceBetAsync(SessionIdentity player, Bet bet, CancellationToken ct = default) =>
+        runner.RunAsync<BlackjackGame>(player, (game, playerId, now) => game.PlaceBet(playerId, bet, now), ct);
 
     public Task ActAsync(SessionIdentity player, PlayerAction action, CancellationToken ct = default)
     {
@@ -34,42 +27,35 @@ internal sealed class BlackjackService(
             throw new AppException(ErrorKind.Validation, "invalid_action", "Action inconnue.");
         }
 
-        return ExecuteAsync(player, (game, playerId, now) => game.Act(playerId, action, now), ct);
+        return runner.RunAsync<BlackjackGame>(player, (game, playerId, now) => game.Act(playerId, action, now), ct);
     }
 
     public Task DistributeAsync(
-        SessionIdentity player, IReadOnlyList<SipAllocationDto>? allocations, CancellationToken ct = default)
+        SessionIdentity player, IReadOnlyList<DrinkAllocationDto>? allocations, CancellationToken ct = default)
     {
-        // Plusieurs lignes pour un même joueur sont additionnées.
-        var byPlayer = (allocations ?? [])
+        var byPlayer = DrinkAllocations.ByPlayer(allocations);
+        return runner.RunAsync<BlackjackGame>(
+            player, (game, playerId, now) => game.Distribute(playerId, byPlayer, now), ct);
+    }
+}
+
+/// <summary>Regroupe une répartition reçue de l'API : plusieurs lignes pour un même joueur sont additionnées.</summary>
+internal static class DrinkAllocations
+{
+    public static IReadOnlyDictionary<Guid, int> ByPlayer(IReadOnlyList<DrinkAllocationDto>? allocations) =>
+        (allocations ?? [])
             .GroupBy(a => a.PlayerId)
-            .ToDictionary(g => g.Key, g => g.Sum(a => a.Sips));
+            .ToDictionary(g => g.Key, g => g.Sum(a => a.Amount));
+}
 
-        return ExecuteAsync(player, (game, playerId, now) => game.Distribute(playerId, byPlayer, now), ct);
-    }
+/// <summary>Vues du blackjack pour une table donnée.</summary>
+internal sealed class BlackjackViewBuilder(BlackjackGame game) : IGameViewBuilder
+{
+    public object BuildTableView(string tableCode, long version, DateTimeOffset now) =>
+        BlackjackViewMapper.ToTableView(game, tableCode, version, now);
 
-    public PlayerViewDto GetPlayerView(SessionIdentity player) =>
-        GetSession(player).GetPlayerView(RequirePlayerId(player), clock.GetUtcNow())
-        ?? throw AppException.TableNotFound();
-
-    public TableViewDto GetTableView(SessionIdentity admin) =>
-        GetSession(admin).GetTableView(clock.GetUtcNow());
-
-    private Task ExecuteAsync(
-        SessionIdentity player, Action<BlackjackGame, Guid, DateTimeOffset> command, CancellationToken ct)
-    {
-        var session = GetSession(player);
-        var playerId = RequirePlayerId(player);
-        var now = clock.GetUtcNow();
-
-        var snapshot = session.Mutate(now, game => command(game, playerId, now));
-        return dispatcher.DispatchAsync(snapshot, ct);
-    }
-
-    private TableSession GetSession(SessionIdentity identity) =>
-        registry.TryGet(identity.TableCode, out var session) ? session : throw AppException.TableNotFound();
-
-    private static Guid RequirePlayerId(SessionIdentity identity) =>
-        identity.PlayerId
-        ?? throw new AppException(ErrorKind.Forbidden, "forbidden", "Cette action est réservée aux joueurs.");
+    public object? BuildPlayerView(Guid playerId, string tableCode, long version, DateTimeOffset now) =>
+        game.Seats.FirstOrDefault(s => s.PlayerId == playerId) is { } seat
+            ? BlackjackViewMapper.ToPlayerView(game, seat, tableCode, version, now)
+            : null;
 }

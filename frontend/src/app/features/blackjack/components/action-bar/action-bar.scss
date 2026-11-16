@@ -1,10 +1,17 @@
+@use 'mixins' as m;
+
+// Deux colonnes sous le pouce, quatre dès qu'il y a la place.
 :host {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-2);
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+
+  @include m.up('sm') {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 .btn {
-  min-height: 3.75rem;
-  font-size: 1.1rem;
+  min-height: 56px;
+  font-size: 16px;
 }

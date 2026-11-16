@@ -1,10 +1,10 @@
 import { DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, finalize } from 'rxjs';
-import { describeApiError } from '../../../core/api/api-error';
-import { LiveView } from '../../../core/models/blackjack.models';
-import { GameHub } from '../../../core/realtime/game-hub';
-import { SessionExit } from '../../../core/session/session-exit';
+import { describeApiError } from '../api/api-error';
+import { LiveState } from '../models/table.models';
+import { GameHub } from './game-hub';
+import { SessionExit } from '../session/session-exit';
 
 const ERROR_DISPLAY_MS = 4000;
 /** En dessous de cet écart, deux échéances successives sont le même minuteur (gigue réseau). */
@@ -15,7 +15,7 @@ const DEADLINE_JITTER_MS = 1000;
  * serveur, convertit `remainingMs` en échéance locale et exécute les commandes.
  * À fournir au niveau du composant de page : sa durée de vie est celle de la page.
  */
-export abstract class LiveGameStore<TView extends LiveView> {
+export abstract class LiveGameStore<TView extends LiveState> {
   protected readonly hub = inject(GameHub);
   protected readonly exit = inject(SessionExit);
   protected readonly destroyRef = inject(DestroyRef);
@@ -37,9 +37,10 @@ export abstract class LiveGameStore<TView extends LiveView> {
   /** Charge l'état courant par HTTP (valide aussi la session : un 401 renvoie à l'accueil). */
   protected abstract fetchState(): Observable<TView>;
 
-  /** Ouvre la connexion temps réel ; `states$` est le flux d'états propre au rôle. */
-  protected open(token: string, states$: Observable<TView>): void {
-    states$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((view) => this.apply(view));
+  /** Ouvre la connexion temps réel ; `event` est le flux d'états propre au rôle. */
+  protected open(token: string, event: 'PlayerState' | 'TableState'): void {
+    // Le hub ne connaît pas la forme des vues : chaque store sait laquelle son jeu lui envoie.
+    (this.hub.on(event) as Observable<TView>).pipe(takeUntilDestroyed(this.destroyRef)).subscribe((view) => this.apply(view));
 
     this.hub
       .on('TableClosed')

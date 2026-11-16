@@ -129,8 +129,8 @@ public class BlackjackGameTests
         t.PlayDealer();
 
         Assert.Equal(HandOutcome.Win, t.Seat(0).Hands[0].Outcome);
-        Assert.Equal(4, t.Seat(0).SipsToDistribute);
-        Assert.Equal(0, t.Seat(0).SipsLost);
+        Assert.Equal(4, t.Seat(0).ToDistribute);
+        Assert.Equal(0, t.Seat(0).Lost);
         Assert.Equal(GamePhase.Distribution, t.Game.Phase);
     }
 
@@ -146,10 +146,10 @@ public class BlackjackGameTests
 
         Assert.Equal(HandStatus.Bust, t.Seat(0).Hands[0].Status);
         Assert.Equal(HandOutcome.Lose, t.Seat(0).Hands[0].Outcome);
-        Assert.Equal(7, t.Seat(0).SipsLost);
+        Assert.Equal(7, t.Seat(0).Lost);
         Assert.Equal(2, t.Game.DealerCards.Count);
         Assert.Equal(GamePhase.Results, t.Game.Phase);
-        Assert.Equal(7, t.Seat(0).TotalDrunk);
+        Assert.Equal(7, t.Seat(0).Totals.SipsDrunk);
     }
 
     [Fact]
@@ -191,8 +191,8 @@ public class BlackjackGameTests
         t.PlayDealer();
 
         Assert.Equal(HandOutcome.Push, t.Seat(0).Hands[0].Outcome);
-        Assert.Equal(0, t.Seat(0).SipsLost);
-        Assert.Equal(0, t.Seat(0).SipsToDistribute);
+        Assert.Equal(0, t.Seat(0).Lost);
+        Assert.Equal(0, t.Seat(0).ToDistribute);
     }
 
     [Fact]
@@ -208,7 +208,7 @@ public class BlackjackGameTests
 
         Assert.Equal(HandStatus.Blackjack, t.Seat(0).Hands[0].Status);
         Assert.Equal(HandOutcome.Blackjack, t.Seat(0).Hands[0].Outcome);
-        Assert.Equal(8, t.Seat(0).SipsToDistribute);
+        Assert.Equal(8, t.Seat(0).ToDistribute);
     }
 
     [Fact]
@@ -224,7 +224,7 @@ public class BlackjackGameTests
 
         Assert.Equal(HandOutcome.Lose, t.Seat(0).Hands[0].Outcome);
         Assert.Equal(HandOutcome.Push, t.Seat(1).Hands[0].Outcome);
-        Assert.Equal(4, t.Seat(0).SipsLost);
+        Assert.Equal(4, t.Seat(0).Lost);
     }
 
     [Fact]
@@ -244,7 +244,7 @@ public class BlackjackGameTests
         Assert.Equal(GamePhase.DealerTurn, t.Game.Phase);
 
         t.PlayDealer();
-        Assert.Equal(20, t.Seat(0).SipsToDistribute);
+        Assert.Equal(20, t.Seat(0).ToDistribute);
     }
 
     [Fact]
@@ -281,7 +281,7 @@ public class BlackjackGameTests
         t.PlayDealer();
 
         Assert.All(seat.Hands, h => Assert.Equal(HandOutcome.Win, h.Outcome));
-        Assert.Equal(8, seat.SipsToDistribute);
+        Assert.Equal(8, seat.ToDistribute);
     }
 
     [Fact]
@@ -301,8 +301,8 @@ public class BlackjackGameTests
         t.PlayDealer();
         Assert.Equal(HandOutcome.Win, seat.Hands[0].Outcome);   // 21 paie 1 pour 1
         Assert.Equal(HandOutcome.Lose, seat.Hands[1].Outcome);  // 16 contre 19
-        Assert.Equal(2, seat.SipsToDistribute);
-        Assert.Equal(2, seat.SipsLost);
+        Assert.Equal(2, seat.ToDistribute);
+        Assert.Equal(2, seat.Lost);
     }
 
     [Fact]
@@ -351,10 +351,10 @@ public class BlackjackGameTests
             t.Now);
 
         Assert.Equal(GamePhase.Results, t.Game.Phase);
-        Assert.Equal(0, t.Seat(0).TotalDrunk);
-        Assert.Equal(4, t.Seat(0).TotalGiven);
-        Assert.Equal(4, t.Seat(1).TotalDrunk);   // 3 perdues + 1 reçue
-        Assert.Equal(3, t.Seat(2).TotalDrunk);   // reçues alors qu'il passait
+        Assert.Equal(0, t.Seat(0).Totals.SipsDrunk);
+        Assert.Equal(4, t.Seat(0).Totals.SipsGiven);
+        Assert.Equal(4, t.Seat(1).Totals.SipsDrunk);   // 3 perdues + 1 reçue
+        Assert.Equal(3, t.Seat(2).Totals.SipsDrunk);   // reçues alors qu'il passait
 
         var round = t.Game.TakeCompletedRound();
         Assert.NotNull(round);
@@ -405,8 +405,8 @@ public class BlackjackGameTests
         t.Elapse();
 
         Assert.Equal(GamePhase.Results, t.Game.Phase);
-        Assert.Equal(5, t.Game.Transfers.Sum(x => x.Sips));
-        Assert.Equal(5, t.Seat(1).TotalDrunk + t.Seat(2).TotalDrunk);
+        Assert.Equal(5, t.Game.Transfers.Sum(x => x.Amount));
+        Assert.Equal(5, t.Seat(1).Totals.SipsDrunk + t.Seat(2).Totals.SipsDrunk);
         Assert.DoesNotContain(t.Game.Transfers, x => x.ToPlayerId == t.Players[0]);
     }
 
@@ -421,6 +421,124 @@ public class BlackjackGameTests
 
         Assert.Equal(GamePhase.Results, t.Game.Phase);
         Assert.Empty(t.Game.Transfers);
+    }
+
+    // ---------------------------------------------------------------- Cul sec
+
+    private static readonly BlackjackRules CulSecRules = new() { AllowCulSec = true };
+
+    [Fact]
+    public void Cul_sec_is_refused_when_the_table_does_not_allow_it()
+    {
+        var t = new GameFixture(new StackedShoe());
+
+        var error = Assert.Throws<GameRuleException>(() => t.BetCulSec(0));
+        Assert.Equal("cul_sec_not_allowed", error.Code);
+    }
+
+    [Fact]
+    public void Only_one_cul_sec_can_be_bet_at_a_time()
+    {
+        var t = new GameFixture(new StackedShoe(), rules: CulSecRules);
+
+        var error = Assert.Throws<GameRuleException>(() =>
+            t.Game.PlaceBet(t.Players[0], new Bet(2, DrinkUnit.CulSec), t.Now));
+        Assert.Equal("invalid_bet", error.Code);
+    }
+
+    [Fact]
+    public void Losing_a_cul_sec_is_counted_apart_from_sips()
+    {
+        // Joueur 10+6 puis 10 = 26.
+        var t = new GameFixture(new StackedShoe(Ten, Five, Six, Ten, Ten), rules: CulSecRules);
+        t.BetCulSec(0);
+
+        t.Act(0, PlayerAction.Hit);
+        t.PlayDealer();
+
+        var seat = t.Seat(0);
+        Assert.Equal(DrinkUnit.CulSec, seat.ResultUnit);
+        Assert.Equal(1, seat.Lost);
+        Assert.Equal(new DrinkTotals(SipsDrunk: 0, SipsGiven: 0, CulsSecsDrunk: 1, CulsSecsGiven: 0), seat.Totals);
+    }
+
+    [Fact]
+    public void Winning_a_cul_sec_makes_another_player_finish_their_glass()
+    {
+        // J1 10+9 = 19 contre 18.
+        var t = new GameFixture(new StackedShoe(Ten, Ten, Nine, Eight), players: 2, rules: CulSecRules);
+        t.BetCulSec(0);
+        t.Bet(1, 0);
+        t.Act(0, PlayerAction.Stand);
+        t.PlayDealer();
+
+        t.Game.Distribute(t.Players[0], new Dictionary<Guid, int> { [t.Players[1]] = 1 }, t.Now);
+
+        var transfer = Assert.Single(t.Game.Transfers);
+        Assert.Equal(DrinkUnit.CulSec, transfer.Unit);
+        Assert.Equal(1, t.Seat(1).Totals.CulsSecsDrunk);
+        Assert.Equal(0, t.Seat(1).Totals.SipsDrunk);
+        Assert.Equal(1, t.Seat(0).Totals.CulsSecsGiven);
+    }
+
+    [Fact]
+    public void Blackjack_on_a_cul_sec_gives_two()
+    {
+        var t = new GameFixture(new StackedShoe(Ace, Nine, King, Seven), players: 2, rules: CulSecRules);
+        t.BetCulSec(0);
+        t.Bet(1, 0);
+
+        t.PlayDealer();
+
+        Assert.Equal(2, t.Seat(0).ToDistribute);
+        Assert.Equal(DrinkUnit.CulSec, t.Seat(0).ResultUnit);
+    }
+
+    [Fact]
+    public void Doubling_a_cul_sec_puts_two_at_stake()
+    {
+        // Joueur 6+5, double, tire 2 = 13. Croupier 10+8 = 18.
+        var t = new GameFixture(new StackedShoe(Six, Ten, Five, Eight, Two), rules: CulSecRules);
+        t.BetCulSec(0);
+
+        t.Act(0, PlayerAction.Double);
+        t.PlayDealer();
+
+        Assert.Equal(2, t.Seat(0).Lost);
+        Assert.Equal(2, t.Seat(0).Totals.CulsSecsDrunk);
+    }
+
+    [Fact]
+    public void A_player_can_receive_sips_and_culs_secs_in_the_same_round()
+    {
+        // J1 (cul sec) 19 et J2 (3 gorgées) 20 gagnent contre 18 ; J3 passe et reçoit tout.
+        var t = new GameFixture(new StackedShoe(Ten, Ten, Ten, Nine, Ten, Eight), players: 3, rules: CulSecRules);
+        t.BetCulSec(0);
+        t.Bet(1, 3);
+        t.Bet(2, 0);
+        t.Act(0, PlayerAction.Stand);
+        t.Act(1, PlayerAction.Stand);
+        t.PlayDealer();
+
+        t.Game.Distribute(t.Players[0], new Dictionary<Guid, int> { [t.Players[2]] = 1 }, t.Now);
+        t.Game.Distribute(t.Players[1], new Dictionary<Guid, int> { [t.Players[2]] = 3 }, t.Now);
+
+        Assert.Equal(GamePhase.Results, t.Game.Phase);
+        Assert.Equal(new DrinkTotals(SipsDrunk: 3, SipsGiven: 0, CulsSecsDrunk: 1, CulsSecsGiven: 0), t.Seat(2).Totals);
+    }
+
+    [Fact]
+    public void Bet_limits_chosen_for_the_table_are_enforced()
+    {
+        var rules = new BlackjackRules { MinBet = 3, MaxBet = 6 };
+        var t = new GameFixture(new StackedShoe(Ten, Six, Eight, Ten), players: 2, rules: rules);
+
+        Assert.Throws<GameRuleException>(() => t.Bet(0, 2));
+        Assert.Throws<GameRuleException>(() => t.Bet(0, 7));
+        t.Bet(0, 3);
+        t.Bet(1, 0);   // passer reste toujours possible
+
+        Assert.Equal(3, t.Seat(0).Bet);
     }
 
     // ---------------------------------------------------------------- Enchaînement

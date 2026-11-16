@@ -3,9 +3,14 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable } from 'rxjs';
 import { BlackjackApi } from '../../../core/api/blackjack-api';
 import { TablesApi } from '../../../core/api/tables-api';
-import { PlayerAction, PlayerView, SipAllocation } from '../../../core/models/blackjack.models';
+import {
+  DrinkAllocation,
+  PlaceBetRequest,
+  PlayerAction,
+  PlayerView,
+} from '../../../core/models/blackjack.models';
 import { PlayerSession } from '../../../core/session/session.model';
-import { LiveGameStore } from './live-game-store';
+import { LiveGameStore } from '../../../core/realtime/live-game-store';
 
 /** État et commandes de la vue joueur. */
 @Injectable()
@@ -20,18 +25,18 @@ export class PlayerStore extends LiveGameStore<PlayerView> {
       .on('RemovedFromTable')
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.exit.toHome('Tu as été retiré de la table.'));
-    this.open(session.token, this.hub.on('PlayerState'));
+    this.open(session.token, 'PlayerState');
   }
 
-  placeBet(sips: number): void {
-    this.run(this.blackjackApi.placeBet(sips));
+  placeBet(bet: PlaceBetRequest): void {
+    this.run(this.blackjackApi.placeBet(bet));
   }
 
   act(action: PlayerAction): void {
     this.run(this.blackjackApi.act(action));
   }
 
-  distribute(allocations: SipAllocation[]): void {
+  distribute(allocations: DrinkAllocation[]): void {
     this.run(this.blackjackApi.distribute(allocations));
   }
 

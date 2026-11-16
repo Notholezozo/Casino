@@ -1,4 +1,5 @@
 using Casino.Application.Abstractions;
+using Casino.Infrastructure.Network;
 using Casino.Infrastructure.Persistence;
 using Casino.Infrastructure.Persistence.Repositories;
 using Microsoft.Data.Sqlite;
@@ -25,6 +26,7 @@ public static class DependencyInjection
 
         services.AddScoped<ITableRepository, TableRepository>();
         services.AddScoped<IRoundRepository, RoundRepository>();
+        services.AddSingleton<ILanAddressProvider, LanAddressProvider>();
 
         return services;
     }

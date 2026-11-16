@@ -1,0 +1,140 @@
+<!-- Sur PC, bar + info + tools forment le bandeau supérieur ; la scène occupe tout le reste. -->
+<header class="bar">
+  <div class="bar__title">
+    <h1>{{ title() }}</h1>
+    <span class="badge badge--burgundy">{{ roundLabel() }}</span>
+    @if (reconnecting()) {
+      <span class="badge badge--danger">Reconnexion…</span>
+    }
+  </div>
+  <div class="status" aria-live="polite">
+    <p class="status__text">{{ phaseText() }}</p>
+    @if (deadline(); as end) {
+      <app-countdown [deadline]="end" />
+    }
+  </div>
+</header>
+
+<section class="info" aria-label="Scores et distribution">
+  @if (scores().length > 0) {
+    <div class="info__block">
+      <h2 class="label">Depuis le début : bu / donné</h2>
+      <ul class="scores">
+        @for (score of scores(); track score.name) {
+          <li>
+            <span class="scores__name">{{ score.name }}</span>
+            <span class="scores__tally">
+              <strong>{{ score.drunk }}</strong> / <strong>{{ score.given }}</strong>
+            </span>
+          </li>
+        }
+      </ul>
+      @if (hasCulsSecs()) {
+        <p class="scores__legend">CS : cul sec</p>
+      }
+    </div>
+  }
+
+  <!-- Ce que chacun boit cette manche est déjà sur sa place ; ici, seulement qui a donné à qui. -->
+  @if (transfers().length > 0) {
+    <div class="info__block info__block--transfers">
+      <h2 class="label">Distribué cette manche</h2>
+      <ul class="transfers">
+        @for (transfer of transfers(); track $index) {
+          <li>
+            {{ transfer.fromPlayerName }} donne à {{ transfer.toPlayerName }} :
+            <strong>{{ transfer.amount | drinks: transfer.unit }}</strong>
+          </li>
+        }
+      </ul>
+    </div>
+  }
+</section>
+
+<div class="tools">
+  <!-- Indicateur propre au jeu : sabot, pot… -->
+  <ng-content select="[tableMeter]" />
+
+  <div class="tools__actions">
+    <button
+      type="button"
+      class="btn invite-toggle"
+      aria-controls="invite-menu"
+      [attr.aria-expanded]="inviteOpen()"
+      (click)="toggleInvite()"
+    >
+      Inviter
+      <span class="invite-toggle__chevron" aria-hidden="true"></span>
+    </button>
+    <button type="button" class="btn btn--danger" [disabled]="busy()" (click)="closeTable.emit()">
+      Fermer la table
+    </button>
+  </div>
+
+  <!-- Menu déroulant : code de la table et QR code réunis, refermable pour dégager la table. -->
+  @if (inviteOpen()) {
+    <section id="invite-menu" class="invite" aria-label="Inviter des joueurs">
+      <span class="label">Code de la table</span>
+      <app-room-code [code]="tableCode()" />
+      @if (invite(); as link) {
+        <app-qr-code [value]="link.url" alt="QR code du lien d'invitation" />
+        <p class="invite__url">{{ link.url }}</p>
+        <p class="invite__hint">
+          @if (link.reachable) {
+            Scanne le QR code, ou ouvre le lien et saisis le code.
+          } @else {
+            Aucune adresse réseau trouvée : ce lien ne marche que sur ce PC. Connecte-le au même
+            Wi-Fi que les téléphones, puis recharge la page.
+          }
+        </p>
+      }
+      <button type="button" class="btn btn--ghost btn--block" (click)="toggleInvite()">
+        Refermer
+      </button>
+    </section>
+  }
+</div>
+
+<main class="stage">
+  <!-- Le cadre réserve la hauteur du croupier, qui dépasse au-dessus du bord de la table. -->
+  <div class="table-frame">
+    <div class="table" [attr.aria-label]="'Table de ' + title()">
+      <!-- Table en demi-cercle : rail, tapis, inscriptions. Affichée à partir de 1024px. -->
+      <svg class="table__shape" [attr.viewBox]="viewBox" aria-hidden="true">
+        <defs>
+          <path id="felt-arc-title" d="M 270 130 A 230 150 0 0 0 730 130" />
+          <path id="felt-arc-rule" d="M 238 130 A 262 178 0 0 0 762 130" />
+        </defs>
+        <path
+          class="shape__rail"
+          d="M 34 10 H 966 Q 990 10 990 34 V 130 A 490 460 0 0 1 10 130 V 34 Q 10 10 34 10 Z"
+        />
+        <path class="shape__felt" d="M 44 40 H 956 V 130 A 456 426 0 0 1 44 130 Z" />
+        <path class="shape__line" d="M 60 56 H 940 V 130 A 440 410 0 0 1 60 130 Z" />
+        @for (stud of studs; track $index) {
+          <circle class="shape__stud" [attr.cx]="stud.x" [attr.cy]="stud.y" r="5" />
+        }
+        <text class="shape__title">
+          <textPath href="#felt-arc-title" startOffset="50%" text-anchor="middle">
+            {{ feltTitle() }}
+          </textPath>
+        </text>
+        <text class="shape__rule">
+          <textPath href="#felt-arc-rule" startOffset="50%" text-anchor="middle">
+            {{ feltRule() }}
+          </textPath>
+        </text>
+      </svg>
+
+      <section class="table__dealer" aria-label="Dealer">
+        <bj-dealer-avatar class="table__avatar" [mood]="dealerMood()" />
+        <!-- Ce que le croupier a devant lui : sa main, les cartes communes… -->
+        <ng-content select="[tableDealer]" />
+      </section>
+
+      <section class="table__seats" aria-label="Joueurs">
+        <ng-content />
+      </section>
+    </div>
+  </div>
+</main>

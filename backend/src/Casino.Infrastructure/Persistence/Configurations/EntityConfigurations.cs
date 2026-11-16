@@ -50,16 +50,18 @@ internal sealed class RoundHandConfiguration : IEntityTypeConfiguration<RoundHan
         builder.ToTable("RoundHands");
         builder.Property(h => h.Cards).HasMaxLength(100).IsRequired();
         builder.Property(h => h.Outcome).HasConversion<string>().HasMaxLength(20);
+        builder.Property(h => h.Unit).HasConversion<string>().HasMaxLength(10);
 
         builder.HasOne<Player>().WithMany().HasForeignKey(h => h.PlayerId).OnDelete(DeleteBehavior.Restrict);
     }
 }
 
-internal sealed class RoundSipTransferConfiguration : IEntityTypeConfiguration<RoundSipTransfer>
+internal sealed class RoundDrinkTransferConfiguration : IEntityTypeConfiguration<RoundDrinkTransfer>
 {
-    public void Configure(EntityTypeBuilder<RoundSipTransfer> builder)
+    public void Configure(EntityTypeBuilder<RoundDrinkTransfer> builder)
     {
-        builder.ToTable("RoundSipTransfers");
+        builder.ToTable("RoundDrinkTransfers");
+        builder.Property(t => t.Unit).HasConversion<string>().HasMaxLength(10);
 
         builder.HasOne<Player>().WithMany().HasForeignKey(t => t.FromPlayerId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<Player>().WithMany().HasForeignKey(t => t.ToPlayerId).OnDelete(DeleteBehavior.Restrict);

@@ -1,53 +1,76 @@
-// Jetons de design partagés. Les composants ne codent aucune couleur en dur :
-// ils lisent ces variables CSS.
+// Jetons du design system « Grand Salon », thème « salon » (sombre).
+// Source : https://claude.ai/artifact/U1FrVJajw8wrpCoEyYtR93 (tokens.json).
+// Les composants ne codent aucune couleur en dur : ils lisent ces variables CSS.
 
 @mixin root-tokens {
-  // Tapis
-  --felt-950: #041a12;
-  --felt-900: #06281c;
-  --felt-800: #0a3b29;
-  --felt-700: #0f5138;
-  --felt-600: #15694a;
+  // Surfaces de page
+  --surface-100: #0a1611; // fond de page
+  --surface-200: #11231a; // panneaux, champs, zone d'actions du joueur
+  --surface-300: #1a3327; // survols, pistes de barre
 
-  // Accents
-  --gold-300: #f3d98b;
-  --gold-400: #e9c46a;
-  --gold-600: #b8892b;
-  --danger: #e5484d;
-  --success: #3ecf8e;
-  --info: #7cc4ff;
+  // Tapis : réservé à la table (cartes, places, croupier). Texte dessus : --on-felt.
+  --felt: #17543a;
+  --felt-deep: #0d3626;
+  --on-felt: #f5ecd6;
 
   // Texte
-  --ink: #f6f2e7;
-  --ink-muted: rgba(246, 242, 231, 0.68);
-  --ink-on-gold: #2a1e05;
+  --ink: #f5ecd6;
+  --ink-muted: #b8ad94;
 
-  // Surfaces
-  --surface: rgba(0, 0, 0, 0.26);
-  --surface-strong: rgba(0, 0, 0, 0.48);
-  --border: rgba(255, 255, 255, 0.14);
+  // Or : --gold pour du texte ou un filet, --gold-fill pour une surface pleine (texte --on-gold).
+  --gold: #d9b45f;
+  --gold-fill: #d9b45f;
+  --gold-fill-hover: #ecc972;
+  --on-gold: #1a1407;
 
-  // Cartes
-  --card-face: #fdfcf7;
-  --card-black: #1b1b1f;
-  --card-red: #c8102e;
-  --card-w: 4rem;
+  // Bordeaux : ce qui quitte ou ce qui est perdu.
+  --burgundy: #8e1f2e;
+  --burgundy-hover: #a52638;
+  --on-burgundy: #f6efdf;
 
-  // Géométrie
-  --radius-sm: 0.5rem;
-  --radius-md: 0.875rem;
-  --radius-lg: 1.25rem;
-  --space-1: 0.25rem;
-  --space-2: 0.5rem;
-  --space-3: 0.75rem;
-  --space-4: 1rem;
-  --space-5: 1.5rem;
-  --space-6: 2rem;
-  --tap-target: 3.25rem;
+  // Traits et états
+  --line: #2a4236; // séparateurs décoratifs
+  --border-control: #a38a4a; // bordure des champs
+  --focus: #f3d98b;
+  --success: #7ccf9a;
+  --danger: #f29a9a;
+  --scrim: #000000a6;
 
-  --shadow-card: 0 2px 6px rgba(0, 0, 0, 0.35);
-  --shadow-raised: 0 8px 24px rgba(0, 0, 0, 0.35);
+  // Couleurs de matière (jetons, cartes) : identiques quel que soit le thème.
+  --chip-ivory: #efe4cc;
+  --chip-red: #a8232f;
+  --chip-green: #1f6b44;
+  --chip-black: #17140f;
 
-  --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --font-display: Georgia, 'Times New Roman', serif;
+  // Typographie
+  --font-display: 'Playfair Display', 'Didot', 'Bodoni MT', Georgia, serif;
+  --font-sans: 'Libre Franklin', 'Franklin Gothic Medium', 'Helvetica Neue', Arial, sans-serif;
+
+  // Espacements (4, 8, 12, 16, 24, 32, 48, 64)
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  // Angles francs
+  --radius-sm: 2px; // boutons, champs, badges
+  --radius-md: 4px; // alertes, places, panneaux
+  --radius-lg: 8px; // cartes à jouer, modales
+  --radius-full: 50%; // jetons
+
+  // Une ombre nette sous l'objet, jamais de lueur.
+  --shadow-card: 0 1px 0 rgba(0, 0, 0, 0.5), 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-raised: 0 2px 0 rgba(0, 0, 0, 0.5), 0 16px 40px rgba(0, 0, 0, 0.6);
+
+  // Gabarits
+  --tap-min: 48px; // hauteur minimale de tout élément tactile
+  --sheet-max: 480px; // largeur maximale de la vue joueur
+  --page-max: 1280px; // largeur maximale de la vue table
+
+  // Largeur d'une carte à jouer ; chaque écran la redéfinit selon la place disponible.
+  --card-w: 64px;
 }

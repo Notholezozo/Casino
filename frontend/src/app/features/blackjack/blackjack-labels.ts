@@ -1,36 +1,47 @@
 import { Hand, PlayerAction } from '../../core/models/blackjack.models';
 
-export type BadgeTone = 'success' | 'danger' | 'gold' | 'neutral';
+// Le vocabulaire du jeu reste en anglais, comme à une vraie table : Hit, Stand, Double, Split, Bust…
+
+/** Classe de badge du design system. Sur le tapis, uniquement des badges pleins. */
+export type BadgeTone = 'solid' | 'burgundy' | 'felt';
 
 export interface Badge {
   label: string;
   tone: BadgeTone;
 }
 
+export const DEALER_LABEL = 'Dealer';
+
 export const ACTION_LABELS: Record<PlayerAction, string> = {
-  Hit: 'Tirer',
-  Stand: 'Rester',
-  Double: 'Doubler',
-  Split: 'Séparer',
+  Hit: 'Hit',
+  Stand: 'Stand',
+  Double: 'Double',
+  Split: 'Split',
 };
 
 const OUTCOME_BADGES: Record<NonNullable<Hand['outcome']>, Badge> = {
-  Win: { label: 'Gagné', tone: 'success' },
-  Blackjack: { label: 'Blackjack !', tone: 'gold' },
-  Push: { label: 'Égalité', tone: 'neutral' },
-  Lose: { label: 'Perdu', tone: 'danger' },
+  Win: { label: 'Win', tone: 'solid' },
+  Blackjack: { label: 'Blackjack', tone: 'solid' },
+  Push: { label: 'Push', tone: 'felt' },
+  Lose: { label: 'Lose', tone: 'burgundy' },
 };
 
 const STATUS_BADGES: Record<Hand['status'], Badge | null> = {
   Playing: null,
-  Stood: { label: 'Reste', tone: 'neutral' },
-  Doubled: { label: 'Doublé', tone: 'neutral' },
-  Bust: { label: 'Sauté', tone: 'danger' },
-  Blackjack: { label: 'Blackjack', tone: 'gold' },
+  Stood: { label: 'Stand', tone: 'felt' },
+  Doubled: { label: 'Double', tone: 'felt' },
+  Bust: { label: 'Bust', tone: 'burgundy' },
+  Blackjack: { label: 'Blackjack', tone: 'solid' },
 };
 
-/** Pastille d'une main : le résultat une fois connu, sinon son statut. */
+/**
+ * Pastille d'une main : le résultat une fois connu, sinon son statut.
+ * Une main sautée reste « Bust » même après le règlement : c'est plus parlant que « Lose ».
+ */
 export function handBadge(hand: Hand): Badge | null {
+  if (hand.status === 'Bust') {
+    return STATUS_BADGES.Bust;
+  }
   return hand.outcome ? OUTCOME_BADGES[hand.outcome] : STATUS_BADGES[hand.status];
 }
 

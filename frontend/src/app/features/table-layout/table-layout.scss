@@ -1,0 +1,425 @@
+@use 'sass:math';
+@use 'mixins' as m;
+
+// Mise en page de l'écran table, commune à tous les jeux.
+// - Petit écran : tout s'empile (titre, outils, tapis arrondi avec les places en grille, scores).
+// - À partir de 1024px : un bandeau d'informations sur 20 % de la hauteur, et la table en
+//   demi-cercle avec son dealer dans tout le reste de l'écran, sans défilement.
+
+// Dimensions du dessin de la table (voir table-geometry.ts).
+$table-width: 1000;
+$table-height: 600;
+// Part de la largeur de la table (en %) dont le dealer dépasse au-dessus de son bord.
+$dealer-overhang: 10.5;
+// Hauteur du cadre qui contient la table et la partie du dealer qui la dépasse.
+$frame-height: $table-height + $dealer-overhang * 10;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: 100%;
+  min-height: 100dvh;
+  padding: calc(var(--space-4) + env(safe-area-inset-top)) var(--space-4) var(--space-5);
+  --card-w: 44px;
+
+  @include m.up('lg') {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-rows: 20dvh minmax(0, 1fr);
+    grid-template-areas:
+      'bar info tools'
+      'stage stage stage';
+    gap: 0 var(--space-6);
+    height: 100dvh;
+    min-height: 0;
+    padding: 0 var(--space-6) var(--space-4);
+    overflow: hidden;
+
+    // Fond du bandeau, d'un bord à l'autre de l'écran.
+    &::before {
+      content: '';
+      grid-area: 1 / 1 / 2 / -1;
+      margin-inline: calc(var(--space-6) * -1);
+      border-bottom: 1px solid var(--line);
+      background: var(--surface-200);
+    }
+  }
+}
+
+// ---------- Bandeau : titre et phase ----------
+
+.bar {
+  display: grid;
+  gap: var(--space-2);
+
+  @include m.up('lg') {
+    grid-area: bar;
+    align-self: center;
+  }
+}
+
+.bar__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+
+  h1 {
+    font: 600 32px/38px var(--font-display);
+  }
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--tap-min);
+}
+
+.status__text {
+  font: 600 24px/30px var(--font-display);
+  color: var(--gold);
+}
+
+// ---------- Bandeau : scores et bilan ----------
+
+.info {
+  order: 4; // petit écran : sous la table
+  display: grid;
+  gap: var(--space-4);
+
+  @include m.up('lg') {
+    grid-area: info;
+    align-self: center;
+    // Conteneur : ses blocs s'adaptent à la largeur qui reste entre le titre et les outils.
+    container-type: inline-size;
+    display: flex;
+    gap: var(--space-6);
+    max-height: calc(20dvh - var(--space-4));
+    overflow: hidden;
+  }
+}
+
+.info__block {
+  @include m.panel;
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-4);
+
+  // Dans le bandeau, les blocs sont de simples colonnes, sans cadre.
+  @include m.up('lg') {
+    flex: none;
+    padding: 0;
+    border: 0;
+    background: none;
+    overflow: hidden;
+  }
+}
+
+.scores,
+.transfers {
+  display: grid;
+  gap: var(--space-1) var(--space-6);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+// Jusqu'à trois joueurs par colonne : six joueurs tiennent dans la hauteur du bandeau.
+.scores {
+  @include m.up('lg') {
+    grid-auto-flow: column;
+    grid-template-rows: repeat(3, auto);
+    justify-content: start;
+  }
+
+  li {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
+}
+
+.scores__name {
+  min-width: 0;
+  max-width: 10ch;
+  font: 600 18px/24px var(--font-display);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scores__tally {
+  @include m.body-sm;
+  color: var(--ink-muted);
+  white-space: nowrap;
+
+  strong {
+    color: var(--gold);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.scores__legend {
+  @include m.caption;
+  color: var(--ink-muted);
+}
+
+// Qui a donné à qui : affiché dans le bandeau seulement s'il reste assez de largeur
+// (écran large) ; chaque place montre déjà ce que son joueur boit et donne.
+.info__block--transfers {
+  @include m.up('lg') {
+    flex: 1 1 0;
+
+    @container (max-width: 719px) {
+      display: none;
+    }
+  }
+}
+
+.transfers {
+  @include m.body-sm;
+  color: var(--ink-muted);
+
+  strong {
+    color: var(--ink);
+    font-weight: 600;
+  }
+}
+
+// ---------- Bandeau : sabot, invitation, fermeture ----------
+
+.tools {
+  order: 2; // petit écran : juste sous le titre
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+
+  @include m.up('lg') {
+    grid-area: tools;
+    align-self: center;
+    flex-wrap: nowrap;
+  }
+}
+
+.tools__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+
+  // Empilés dans le bandeau : deux boutons de 48px tiennent dans 20 % de hauteur.
+  @include m.up('lg') {
+    flex-direction: column;
+    flex-wrap: nowrap;
+  }
+}
+
+// Chevron dessiné en CSS : pointe vers le bas, se retourne quand le menu est ouvert.
+.invite-toggle__chevron {
+  width: 8px;
+  height: 8px;
+  margin-top: -4px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform 160ms ease-out;
+
+  .invite-toggle[aria-expanded='true'] & {
+    margin-top: 4px;
+    transform: rotate(-135deg);
+  }
+}
+
+// Menu déroulant d'invitation : code de la table + QR code.
+.invite {
+  @include m.panel;
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-5);
+  text-align: center;
+
+  // Sur PC il se déroule sous le bandeau, par-dessus le coin de la table.
+  @include m.up('lg') {
+    position: absolute;
+    top: calc(100% + var(--space-3));
+    right: 0;
+    z-index: 10;
+    width: 320px;
+    border-color: var(--gold);
+    box-shadow: var(--shadow-raised);
+  }
+}
+
+.invite__url {
+  font: 600 16px/24px var(--font-sans);
+  word-break: break-all;
+}
+
+.invite__hint {
+  @include m.body-sm;
+  color: var(--ink-muted);
+}
+
+// ---------- Scène : la table et son dealer ----------
+
+.stage {
+  order: 3;
+
+  // La scène est un conteneur : la table se dimensionne sur sa largeur ET sa hauteur.
+  @include m.up('lg') {
+    grid-area: stage;
+    container-type: size;
+    display: grid;
+    place-items: center;
+    min-height: 0;
+    padding-top: var(--space-3);
+  }
+}
+
+// Le cadre a les proportions de la table plus la hauteur dont le dealer la dépasse :
+// la table s'agrandit autant que possible sans jamais sortir de l'écran.
+.table-frame {
+  @include m.up('lg') {
+    display: flex;
+    align-items: flex-end;
+    width: min(100cqw, #{math.div(100 * $table-width, $frame-height)}cqh);
+    aspect-ratio: #{$table-width} / #{$frame-height};
+  }
+}
+
+// Petit écran : un tapis bordé d'un rail sombre, arrondi en bas comme une table.
+.table {
+  display: grid;
+  gap: var(--space-5);
+  // Le dealer 3D dépasse au-dessus du bord, comme debout derrière la table.
+  margin-top: var(--space-7);
+  padding: 0 var(--space-3) var(--space-8);
+  border: 8px solid var(--chip-black);
+  border-radius: var(--radius-lg) var(--radius-lg) 50% 50% / var(--radius-lg) var(--radius-lg) 72px
+    72px;
+  outline: 1px solid var(--gold);
+  background: var(--felt);
+  color: var(--on-felt);
+
+  :focus-visible {
+    outline-color: var(--on-felt);
+  }
+}
+
+.table__shape {
+  display: none;
+}
+
+.table__dealer {
+  --card-w: 64px;
+  display: grid;
+  justify-items: center;
+}
+
+.table__avatar {
+  width: 200px;
+  margin-top: calc(var(--space-7) * -1);
+  margin-bottom: calc(var(--space-2) * -1);
+}
+
+.table__seats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+
+  @include m.up('sm') {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+// Grand écran : la table est un dessin SVG, les éléments s'y posent en absolu.
+@include m.up('lg') {
+  .table {
+    position: relative;
+    display: block;
+    // Les tailles internes (cartes, places) suivent la largeur de la table.
+    container-type: inline-size;
+    width: 100%;
+    aspect-ratio: #{$table-width} / #{$table-height};
+    margin-top: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    outline: 0;
+    background: none;
+  }
+
+  .table__shape {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .table__dealer {
+    --card-w: 5.8cqw;
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 36cqw;
+    transform: translateX(-50%);
+  }
+
+  .table__avatar {
+    width: 25cqw;
+    margin-top: #{$dealer-overhang * -1}cqw;
+  }
+
+  // Le conteneur s'efface : chaque place se positionne par rapport à la table.
+  .table__seats {
+    display: contents;
+  }
+}
+
+// Dessin de la table
+.shape__rail {
+  fill: var(--chip-black);
+  stroke: var(--gold);
+  stroke-width: 2;
+}
+
+.shape__felt {
+  fill: var(--felt);
+}
+
+.shape__line {
+  fill: none;
+  stroke: var(--on-felt);
+  stroke-width: 1.5;
+  opacity: 0.25;
+}
+
+.shape__stud {
+  fill: var(--gold-fill);
+}
+
+.shape__title {
+  fill: var(--gold);
+  font: 700 26px var(--font-display);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.shape__rule {
+  fill: var(--on-felt);
+  font: 600 13px var(--font-sans);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+

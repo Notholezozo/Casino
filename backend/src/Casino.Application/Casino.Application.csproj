@@ -16,4 +16,9 @@
     <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.*" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Les tests vérifient les vues envoyées aux écrans, qui sont internes à la couche. -->
+    <InternalsVisibleTo Include="Casino.Tests" />
+  </ItemGroup>
+
 </Project>

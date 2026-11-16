@@ -10,13 +10,13 @@ namespace Casino.Api.Controllers;
 [Route("api/tables")]
 public sealed class TablesController(ITableService tables) : ControllerBase
 {
-    /// <summary>Ouvre une table. L'appelant devient son écran admin.</summary>
+    /// <summary>Ouvre une table avec ses mises min/max. L'appelant devient son écran admin.</summary>
     [HttpPost]
     [ProducesResponseType<CreateTableResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> Create(CancellationToken ct)
+    public async Task<IActionResult> Create([FromBody] CreateTableRequest? request, CancellationToken ct)
     {
-        var response = await tables.CreateAsync(ct);
+        var response = await tables.CreateAsync(request, ct);
         return CreatedAtAction(nameof(Get), new { code = response.Code }, response);
     }
 

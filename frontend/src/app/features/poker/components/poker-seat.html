@@ -1,0 +1,61 @@
+@if (seat(); as s) {
+  <header class="head">
+    <span
+      class="presence"
+      [attr.title]="s.isConnected ? 'Connecté' : 'Déconnecté'"
+      [attr.aria-label]="s.isConnected ? 'Connecté' : 'Déconnecté'"
+    ></span>
+    <h3 class="name">{{ s.name }}</h3>
+    @if (role(); as label) {
+      <span class="badge badge--felt role">{{ label }}</span>
+    }
+    <button
+      type="button"
+      class="kick"
+      [attr.aria-label]="'Expulser ' + s.name"
+      title="Expulser"
+      (click)="kick.emit()"
+    >
+      ×
+    </button>
+  </header>
+
+  <div class="body">
+    @if (cardSlots().length > 0) {
+      <div class="cards">
+        <!-- Suivi par position : un dos qui reçoit sa face à l'abattage se retourne. -->
+        @for (card of cardSlots(); track $index) {
+          <app-playing-card [card]="card" [dealOrder]="$index * 10 + dealRank()" />
+        }
+      </div>
+      @if (s.folded) {
+        <span class="badge badge--burgundy status">Fold</span>
+      } @else if (s.isWinner) {
+        <span class="badge badge--solid status">Win</span>
+      }
+    } @else {
+      <p class="note">Hors main</p>
+    }
+  </div>
+
+  @if (showResult()) {
+    <p class="note">
+      @if (s.handName) {
+        <strong>{{ s.handName }}</strong> ·
+      }
+      @if (s.isWinner) {
+        {{ s.distributionDone ? 'a donné' : 'donne' }} {{ s.toDistribute | drinks }}
+      } @else if (s.sipsToDrink > 0) {
+        boit <strong>{{ s.sipsToDrink | drinks }}</strong>
+      } @else {
+        ne boit pas
+      }
+    </p>
+  } @else if (showBet()) {
+    <p class="note">
+      Mise : <strong>{{ s.totalBet | drinks }}</strong>
+    </p>
+  }
+} @else {
+  <span class="free">Place libre</span>
+}

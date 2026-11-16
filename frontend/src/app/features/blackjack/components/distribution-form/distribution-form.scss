@@ -1,26 +1,28 @@
+@use 'mixins' as m;
+
 :host {
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: var(--space-3);
 }
 
 .remaining {
+  @include m.body-sm;
   text-align: center;
   color: var(--ink-muted);
 
   strong {
-    color: var(--gold-300);
+    color: var(--gold);
+    font-weight: 700;
   }
 
   &.is-done {
     color: var(--success);
-    font-weight: 700;
+    font-weight: 600;
   }
 }
 
 .rows {
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: var(--space-2);
   margin: 0;
   padding: 0;
@@ -31,18 +33,19 @@
 
 .row {
   display: grid;
-  grid-template-columns: 1fr auto 2.5rem auto;
+  grid-template-columns: 1fr var(--tap-min) 40px var(--tap-min);
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-3);
 }
 
+// Le nom est un raccourci : un appui donne tout le reste à ce joueur.
 .row__name {
-  min-height: var(--tap-target);
+  min-height: var(--tap-min);
   padding: 0 var(--space-3);
-  border: 0;
+  border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  background: var(--surface);
-  font-weight: 700;
+  background: var(--surface-300);
+  font: 600 18px/24px var(--font-display);
   text-align: left;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -54,15 +57,33 @@
   }
 }
 
-.row__sips {
-  font-size: 1.4rem;
-  font-weight: 800;
+.row__amount {
+  @include m.amount;
+  color: var(--gold);
+  font-size: 24px;
   text-align: center;
-  font-variant-numeric: tabular-nums;
 }
 
+// Bouton rond +/− du design system.
 .step {
-  width: var(--tap-target);
+  width: var(--tap-min);
+  height: var(--tap-min);
   padding: 0;
-  font-size: 1.5rem;
+  border: 1px solid var(--gold);
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--gold);
+  font: 700 24px/1 var(--font-sans);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color 160ms ease-out;
+
+  &:hover:not(:disabled) {
+    background: var(--surface-300);
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
 }

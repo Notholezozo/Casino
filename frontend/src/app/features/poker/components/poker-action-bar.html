@@ -1,0 +1,49 @@
+<div class="raise">
+  <button
+    type="button"
+    class="step"
+    aria-label="Relancer d'une gorgée de moins"
+    [disabled]="disabled() || !canRaise() || raiseBy() <= limits().minRaise"
+    (click)="changeRaise(-1)"
+  >
+    −
+  </button>
+  <button
+    type="button"
+    class="btn"
+    [disabled]="disabled() || !canRaise()"
+    (click)="choose('Raise')"
+  >
+    Raise +{{ raiseBy() }}
+    <span class="cost">({{ raiseCost() | drinks }})</span>
+  </button>
+  <button
+    type="button"
+    class="step"
+    aria-label="Relancer d'une gorgée de plus"
+    [disabled]="disabled() || !canRaise() || raiseBy() >= limits().maxRaise"
+    (click)="changeRaise(1)"
+  >
+    +
+  </button>
+</div>
+
+<div class="main">
+  <button type="button" class="btn" [disabled]="disabled() || !canFold()" (click)="choose('Fold')">
+    Fold
+  </button>
+  @if (canCall()) {
+    <button type="button" class="btn btn--primary" [disabled]="disabled()" (click)="choose('Call')">
+      Call {{ amountToCall() }}
+    </button>
+  } @else {
+    <button
+      type="button"
+      class="btn btn--primary"
+      [disabled]="disabled() || !canCheck()"
+      (click)="choose('Check')"
+    >
+      Check
+    </button>
+  }
+</div>

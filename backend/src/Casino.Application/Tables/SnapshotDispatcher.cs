@@ -48,14 +48,16 @@ internal sealed class SnapshotDispatcher(
                 Cards = string.Join(' ', h.Cards),
                 Total = h.Total,
                 Bet = h.Bet,
+                Unit = h.Unit,
                 Outcome = h.Outcome,
             }).ToList(),
-            Transfers = summary.Transfers.Select(t => new RoundSipTransfer
+            Transfers = summary.Transfers.Select(t => new RoundDrinkTransfer
             {
                 Id = Guid.NewGuid(),
                 FromPlayerId = t.FromPlayerId,
                 ToPlayerId = t.ToPlayerId,
-                Sips = t.Sips,
+                Amount = t.Amount,
+                Unit = t.Unit,
             }).ToList(),
         };
 

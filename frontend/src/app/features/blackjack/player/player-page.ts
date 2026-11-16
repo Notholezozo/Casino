@@ -1,11 +1,20 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, effect, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { PlayerAction, PlayerView, SipAllocation } from '../../../core/models/blackjack.models';
+import {
+  DrinkAllocation,
+  PlaceBetRequest,
+  PlayerAction,
+  PlayerView,
+} from '../../../core/models/blackjack.models';
 import { SessionStore } from '../../../core/session/session-store';
-import { SipsPipe } from '../../../shared/pipes/sips-pipe';
+import { formatToDrink } from '../../../shared/pipes/drinks-pipe';
 import { Countdown } from '../../../shared/ui/countdown/countdown';
+import { DealerMood } from '../../../shared/ui/dealer-3d/dealer-3d';
+import { DealSequencer } from '../../../shared/ui/dealing/deal-sequencer';
 import { ActionBar } from '../components/action-bar/action-bar';
 import { BetPicker } from '../components/bet-picker/bet-picker';
+import { DealerAvatar } from '../../table-layout/dealer-avatar';
+import { PlayerShell } from '../../table-layout/player-shell';
 import { DealerHand } from '../components/dealer-hand/dealer-hand';
 import { DistributionForm } from '../components/distribution-form/distribution-form';
 import { HandView } from '../components/hand/hand';
@@ -38,10 +47,7 @@ function resolveMode(view: PlayerView): PlayerMode {
     case 'Distribution': {
       const result = me.result;
       const mustDistribute =
-        !!result &&
-        result.sipsToDistribute > 0 &&
-        result.canDistribute &&
-        !result.distributionDone;
+        !!result && result.toDistribute > 0 && result.canDistribute && !result.distributionDone;
       return mustDistribute ? 'distributing' : 'distribution-wait';
     }
     case 'Results':
@@ -49,21 +55,34 @@ function resolveMode(view: PlayerView): PlayerMode {
   }
 }
 
-/** Vue joueur (téléphone) : ses cartes, le croupier et ses options — rien des autres mains. */
+/** Le croupier jubile quand le joueur perd, et fait la tête quand il gagne. */
+function resolveDealerMood(view: PlayerView): DealerMood {
+  const result = view.me.result;
+  if (!result || (view.phase !== 'Distribution' && view.phase !== 'Results')) {
+    return 'idle';
+  }
+  if (result.toDistribute > 0 && result.lost === 0) {
+    return 'sad';
+  }
+  return result.lost > 0 ? 'happy' : 'idle';
+}
+
+/** Vue joueur (téléphone) : ses cartes, le dealer et ses options — rien des autres mains. */
 @Component({
   selector: 'bj-player-page',
   imports: [
     ActionBar,
     BetPicker,
     Countdown,
+    DealerAvatar,
     DealerHand,
     DistributionForm,
     HandView,
+    PlayerShell,
     RoundResultView,
     RouterLink,
-    SipsPipe,
   ],
-  providers: [PlayerStore],
+  providers: [PlayerStore, DealSequencer],
   templateUrl: './player-page.html',
   styleUrl: './player-page.scss',
 })
@@ -74,6 +93,17 @@ export class PlayerPage {
   protected readonly mode = computed(() => {
     const view = this.view();
     return view ? resolveMode(view) : null;
+  });
+
+  protected readonly dealerMood = computed<DealerMood>(() => {
+    const view = this.view();
+    return view ? resolveDealerMood(view) : 'idle';
+  });
+
+  /** Rappel de la manche précédente, affiché pendant qu'on mise la suivante. */
+  protected readonly lastToDrink = computed(() => {
+    const last = this.view()?.me.result;
+    return last ? (formatToDrink(last.sipsToDrink, last.culsSecsToDrink) ?? 'rien à boire') : null;
   });
 
   protected readonly statusText = computed(() => {
@@ -87,17 +117,17 @@ export class PlayerPage {
       case 'spectating':
         return 'Manche en cours : tu joues la prochaine.';
       case 'my-turn':
-        return 'À toi de jouer !';
+        return 'À toi de jouer';
       case 'waiting-turn': {
         const active = view.others.find((player) => player.id === view.activePlayerId);
-        return active ? `C'est au tour de ${active.name}` : 'En attente…';
+        return active ? `Au tour de ${active.name}` : 'En attente…';
       }
       case 'dealer':
-        return 'Le croupier joue…';
+        return 'Le dealer joue…';
       case 'distributing':
-        return 'Tu as gagné : distribue tes gorgées !';
+        return 'Tu as gagné : distribue';
       case 'distribution-wait':
-        return 'Les gagnants distribuent leurs gorgées…';
+        return 'Les gagnants distribuent…';
       case 'results':
         return 'Fin de la manche';
     }
@@ -109,17 +139,26 @@ export class PlayerPage {
     if (session?.role === 'player') {
       this.store.connect(session);
     }
+
+    // Les cartes déjà sur la table à l'arrivée ne sont pas redistribuées : on n'anime
+    // qu'à partir du moment où le premier état est affiché.
+    const sequencer = inject(DealSequencer);
+    effect(() => {
+      if (this.view()) {
+        setTimeout(() => sequencer.arm());
+      }
+    });
   }
 
-  protected placeBet(sips: number): void {
-    this.store.placeBet(sips);
+  protected placeBet(bet: PlaceBetRequest): void {
+    this.store.placeBet(bet);
   }
 
   protected act(action: PlayerAction): void {
     this.store.act(action);
   }
 
-  protected distribute(allocations: SipAllocation[]): void {
+  protected distribute(allocations: DrinkAllocation[]): void {
     this.store.distribute(allocations);
   }
 

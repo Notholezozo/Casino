@@ -1,0 +1,54 @@
+:host {
+  display: grid;
+  gap: var(--space-3);
+}
+
+// Relance : − [Raise +N] +
+.raise {
+  display: grid;
+  grid-template-columns: var(--tap-min) 1fr var(--tap-min);
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.cost {
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+// Bouton rond +/− du design system.
+.step {
+  width: var(--tap-min);
+  height: var(--tap-min);
+  padding: 0;
+  border: 1px solid var(--gold);
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--gold);
+  font: 700 24px/1 var(--font-sans);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color 160ms ease-out;
+
+  &:hover:not(:disabled) {
+    background: var(--surface-300);
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+}
+
+// Fold et l'action principale (Check ou Call), sous le pouce.
+.main {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: var(--space-3);
+
+  .btn {
+    min-height: 56px;
+    font-size: 16px;
+  }
+}

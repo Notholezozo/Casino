@@ -36,6 +36,13 @@ public enum HandOutcome
     Lose,
 }
 
+/// <summary>Unité d'une mise : des gorgées, ou un cul sec (finir son verre), compté à part.</summary>
+public enum DrinkUnit
+{
+    Sip,
+    CulSec,
+}
+
 public enum PlayerAction
 {
     Hit,

@@ -1,38 +1,69 @@
+@use 'mixins' as m;
+
+// Toujours posée sur le tapis.
+
 :host {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  display: grid;
+  justify-items: center;
   gap: var(--space-2);
+}
+
+.label {
+  color: var(--on-felt);
 }
 
 .cards {
   display: flex;
-  flex-wrap: wrap; // un croupier à 6 cartes ou plus ne doit pas déborder d'un téléphone
+  flex-wrap: wrap; // un dealer à 6 cartes ou plus ne doit pas déborder d'un téléphone
   justify-content: center;
   gap: var(--space-2);
   min-height: calc(var(--card-w) * 1.4);
 }
 
+// Emplacement vide, avant la donne.
 .slot {
   width: var(--card-w);
   aspect-ratio: 5 / 7;
-  border: 2px dashed var(--border);
-  border-radius: calc(var(--card-w) * 0.13);
+  border: 2px dashed var(--on-felt);
+  border-radius: var(--radius-lg);
+  opacity: 0.35;
 }
 
 .meta {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  min-height: 1.75rem;
+  min-height: 36px;
+  transition: opacity 200ms ease-out;
+}
+
+// Le total n'apparaît qu'une fois la donne posée, pas avant les cartes.
+:host(.is-dealing) .meta {
+  opacity: 0;
+  transition: none;
 }
 
 .total {
-  min-width: 2rem;
-  padding: 0.1rem 0.5rem;
-  border-radius: 999px;
-  background: var(--surface-strong);
-  font-weight: 800;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
+  @include m.amount;
+  display: inline-grid;
+  place-items: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--on-felt);
+  color: var(--felt-deep);
+  font-size: 20px;
+  line-height: 1;
+  white-space: nowrap;
+
+  &.is-blackjack {
+    background: var(--gold-fill);
+    color: var(--on-gold);
+  }
+
+  &.is-bust {
+    background: var(--burgundy);
+    color: var(--on-burgundy);
+  }
 }

@@ -1,31 +1,38 @@
 import { Component, computed, input, output, signal } from '@angular/core';
-import { OtherPlayer, SipAllocation } from '../../../../core/models/blackjack.models';
-import { SipsPipe } from '../../../../shared/pipes/sips-pipe';
+import { DrinkAllocation, DrinkUnit, OtherPlayer } from '../../../../core/models/blackjack.models';
+import { DrinksPipe } from '../../../../shared/pipes/drinks-pipe';
 
-/** Répartition des gorgées gagnées entre les autres joueurs ; la somme doit être exacte. */
+/**
+ * Répartition de ce que le joueur a gagné (gorgées ou culs secs) entre les autres joueurs ;
+ * la somme doit être exacte.
+ */
 @Component({
   selector: 'bj-distribution-form',
-  imports: [SipsPipe],
+  imports: [DrinksPipe],
   templateUrl: './distribution-form.html',
   styleUrl: './distribution-form.scss',
 })
 export class DistributionForm {
   readonly total = input.required<number>();
+  readonly unit = input<DrinkUnit>('Sip');
   readonly players = input.required<readonly OtherPlayer[]>();
   readonly disabled = input(false);
 
-  readonly submitted = output<SipAllocation[]>();
+  readonly submitted = output<DrinkAllocation[]>();
 
   private readonly amounts = signal<Readonly<Record<string, number>>>({});
 
   /** Une ligne par joueur encore présent (un joueur parti perd sa part). */
   protected readonly rows = computed(() =>
-    this.players().map((player) => ({ player, sips: this.amounts()[player.id] ?? 0 })),
+    this.players().map((player) => ({ player, amount: this.amounts()[player.id] ?? 0 })),
   );
 
   protected readonly remaining = computed(
-    () => this.total() - this.rows().reduce((sum, row) => sum + row.sips, 0),
+    () => this.total() - this.rows().reduce((sum, row) => sum + row.amount, 0),
   );
+
+  /** « une gorgée » ou « un cul sec », pour les libellés des boutons. */
+  protected readonly one = computed(() => (this.unit() === 'CulSec' ? 'un cul sec' : 'une gorgée'));
 
   protected change(playerId: string, delta: number): void {
     const current = this.amounts()[playerId] ?? 0;
@@ -42,8 +49,8 @@ export class DistributionForm {
       return;
     }
     const allocations = this.rows()
-      .filter((row) => row.sips > 0)
-      .map((row) => ({ playerId: row.player.id, sips: row.sips }));
+      .filter((row) => row.amount > 0)
+      .map((row) => ({ playerId: row.player.id, amount: row.amount }));
     this.submitted.emit(allocations);
   }
 }

@@ -12,13 +12,16 @@ public sealed record BlackjackRules
 
     public int MaxBet { get; init; } = 10;
 
+    /// <summary>Autorise la mise « cul sec », au-dessus de la mise maximale en gorgées.</summary>
+    public bool AllowCulSec { get; init; }
+
     /// <summary>Nombre maximal de mains par joueur après séparations.</summary>
     public int MaxHandsPerPlayer { get; init; } = 4;
 
     /// <summary>Faux = le croupier reste sur tout 17 (règle classique).</summary>
     public bool DealerHitsSoft17 { get; init; }
 
-    /// <summary>Gorgées distribuées pour un blackjack naturel : mise × 3/2, arrondi au-dessus.</summary>
+    /// <summary>Quantité distribuée pour un blackjack naturel : mise × 3/2, arrondi au-dessus (1 cul sec → 2).</summary>
     public int BlackjackPayout(int bet) => (bet * 3 + 1) / 2;
 }
 

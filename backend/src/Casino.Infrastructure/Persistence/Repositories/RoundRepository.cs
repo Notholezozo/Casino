@@ -21,8 +21,10 @@ internal sealed class RoundRepository(CasinoDbContext db) : IRoundRepository
                 .Where(p => p.Id == total.PlayerId)
                 .ExecuteUpdateAsync(
                     set => set
-                        .SetProperty(p => p.TotalDrunk, total.TotalDrunk)
-                        .SetProperty(p => p.TotalGiven, total.TotalGiven),
+                        .SetProperty(p => p.TotalDrunk, total.Totals.SipsDrunk)
+                        .SetProperty(p => p.TotalGiven, total.Totals.SipsGiven)
+                        .SetProperty(p => p.TotalCulsSecsDrunk, total.Totals.CulsSecsDrunk)
+                        .SetProperty(p => p.TotalCulsSecsGiven, total.Totals.CulsSecsGiven),
                     ct);
         }
 

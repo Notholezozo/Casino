@@ -1,6 +1,9 @@
 @use 'tokens';
 @use 'mixins' as m;
 
+// Styles globaux : mise à zéro et classes utilitaires du design system « Grand Salon »
+// (boutons, badges, champs). Les composants gardent leurs styles propres.
+
 :root {
   @include tokens.root-tokens;
   color-scheme: dark;
@@ -19,12 +22,11 @@ html {
 body {
   margin: 0;
   min-height: 100dvh;
-  font-family: var(--font-body);
+  background: var(--surface-100);
   color: var(--ink);
-  background:
-    radial-gradient(ellipse at 50% 0%, var(--felt-600) 0%, transparent 65%),
-    linear-gradient(var(--felt-800), var(--felt-950));
-  background-attachment: fixed;
+  font: 400 16px/24px var(--font-sans);
+  // Les symboles ♠ ♥ ♦ ♣ restent des glyphes de texte, jamais des emojis.
+  font-variant-emoji: text;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
@@ -38,123 +40,255 @@ p {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
   color: inherit;
 }
 
 :focus-visible {
-  outline: 2px solid var(--gold-300);
-  outline-offset: 2px;
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
 }
 
 // ---------- Boutons ----------
+// Une seule action `btn--primary` par écran ; les autres sont secondaires (filet or).
 
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  min-height: var(--tap-target);
-  padding: 0 var(--space-4);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--surface-strong);
-  font-weight: 700;
-  font-size: 1rem;
+  min-height: var(--tap-min);
+  padding: 0 var(--space-5);
+  border: 1px solid var(--gold);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--gold);
+  font: 600 14px/16px var(--font-sans);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   text-decoration: none;
   cursor: pointer;
   touch-action: manipulation;
   user-select: none;
   transition:
-    transform 80ms ease,
-    filter 120ms ease,
-    opacity 120ms ease;
+    background-color 160ms ease-out,
+    border-color 160ms ease-out,
+    color 160ms ease-out;
 
-  &:active:not(:disabled) {
-    transform: scale(0.97);
+  &:hover:not(:disabled) {
+    background: var(--surface-300);
   }
 
+  // Une action impossible est grisée plutôt que masquée : la grille ne bouge pas.
   &:disabled {
-    opacity: 0.38;
+    opacity: 0.45;
     cursor: not-allowed;
   }
 }
 
 .btn--primary {
-  border-color: var(--gold-600);
-  background: linear-gradient(var(--gold-300), var(--gold-400));
-  color: var(--ink-on-gold);
-  box-shadow: 0 2px 0 var(--gold-600);
+  background: var(--gold-fill);
+  border-color: var(--gold-fill);
+  color: var(--on-gold);
 
   &:hover:not(:disabled) {
-    filter: brightness(1.06);
+    background: var(--gold-fill-hover);
+    border-color: var(--gold-fill-hover);
   }
 }
 
 .btn--danger {
-  border-color: transparent;
-  background: var(--danger);
-  color: #fff;
+  background: var(--burgundy);
+  border-color: var(--gold);
+  color: var(--on-burgundy);
+
+  &:hover:not(:disabled) {
+    background: var(--burgundy-hover);
+  }
 }
 
 .btn--ghost {
-  background: transparent;
+  border-color: transparent;
+  color: var(--ink);
 }
 
-.btn--small {
-  min-height: 2.25rem;
-  padding: 0 var(--space-3);
-  font-size: 0.875rem;
-  border-radius: var(--radius-sm);
+.btn--lg {
+  min-height: 56px;
+  padding: 0 var(--space-6);
+  font-size: 16px;
 }
 
 .btn--block {
   width: 100%;
 }
 
-// ---------- Pastilles ----------
+// ---------- Badges ----------
+// Sur le tapis, toujours des badges pleins (solid, burgundy, felt), jamais un contour coloré.
 
 .badge {
   display: inline-flex;
   align-items: center;
-  padding: 0.15rem 0.55rem;
-  border-radius: 999px;
-  background: var(--surface-strong);
-  border: 1px solid var(--border);
-  font-size: 0.75rem;
-  font-weight: 700;
+  gap: 6px;
+  padding: 2px var(--space-2);
+  border: 1px solid var(--gold);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--gold);
+  font: 600 12px/16px var(--font-sans);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
   white-space: nowrap;
 }
 
+.badge--solid {
+  background: var(--gold-fill);
+  border-color: var(--gold-fill);
+  color: var(--on-gold);
+}
+
+.badge--burgundy {
+  background: var(--burgundy);
+  border-color: var(--burgundy);
+  color: var(--on-burgundy);
+}
+
+.badge--felt {
+  background: var(--on-felt);
+  border-color: var(--on-felt);
+  color: var(--felt-deep);
+}
+
 .badge--success {
-  background: var(--success);
-  border-color: transparent;
-  color: #052e1c;
+  border-color: var(--success);
+  color: var(--success);
 }
 
 .badge--danger {
-  background: var(--danger);
-  border-color: transparent;
-  color: #fff;
+  border-color: var(--danger);
+  color: var(--danger);
 }
 
-.badge--gold {
-  background: var(--gold-400);
-  border-color: transparent;
-  color: var(--ink-on-gold);
-}
+// ---------- Champs ----------
 
-.badge--neutral {
-  color: var(--ink-muted);
+.field {
+  display: grid;
+  gap: var(--space-1);
+  width: 100%;
 }
-
-// ---------- Divers ----------
 
 .label {
   @include m.label;
 }
 
+.input {
+  width: 100%;
+  min-height: var(--tap-min);
+  padding: 0 var(--space-3);
+  background: var(--surface-200);
+  color: var(--ink);
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-sm);
+  // 16px minimum : évite le zoom automatique d'iOS à la prise de focus.
+  font: 400 16px/24px var(--font-sans);
+
+  &::placeholder {
+    color: var(--ink-muted);
+  }
+
+  &:focus {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+    border-color: var(--gold);
+  }
+}
+
+// Code de table : grandes capitales espacées, en or.
+.input--code {
+  padding-left: calc(var(--space-3) + 0.4em);
+  color: var(--gold);
+  font: 700 32px/40px var(--font-display);
+  letter-spacing: 0.4em;
+  text-align: center;
+  text-transform: uppercase;
+
+  &::placeholder {
+    font-weight: 400;
+  }
+}
+
+// ---------- Écran table (commun aux jeux) ----------
+// Ces classes s'appliquent à ce que chaque jeu projette dans la mise en page de la table
+// (features/table-layout) : elles doivent donc être globales.
+
+// Une place autour de la table. À partir de 1024px elle se pose sur l'arc, à la position
+// (--x, --y) fournie par table-geometry.ts ; ses tailles suivent la largeur de la table.
+.table-seat {
+  @include m.up('lg') {
+    --card-w: 4.6cqw;
+    --seat-card-w: 4.6cqw;
+    position: absolute;
+    left: var(--x);
+    top: var(--y);
+    width: 14.6cqw;
+    transform: translate(-50%, -50%);
+  }
+}
+
+// Indicateur du bandeau, sur un morceau de tapis : sabot du blackjack, pot du poker…
+.meter {
+  display: grid;
+  gap: var(--space-2);
+  flex: 1 1 220px;
+  max-width: 280px;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--felt);
+  color: var(--on-felt);
+
+  @include m.up('lg') {
+    flex: none;
+    width: 208px;
+  }
+}
+
+.meter__row {
+  display: flex;
+  justify-content: space-between;
+  font: 600 12px/16px var(--font-sans);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+}
+
+.meter__bar {
+  height: 8px;
+  border-radius: var(--radius-sm);
+  background: var(--felt-deep);
+  overflow: hidden;
+}
+
+.meter__fill {
+  height: 100%;
+  background: var(--gold-fill);
+  transition: width 160ms ease-out;
+}
+
+.meter__note {
+  @include m.caption;
+}
+
+// ---------- Divers ----------
+
+// Double filet or : sépare un titre de son contenu, pas plus d'un par écran.
+.rule {
+  margin: 0;
+  border: 0;
+  border-top: 3px double var(--gold);
+}
+
+// Message d'erreur temporaire, en bas de l'écran.
 .toast {
   position: fixed;
   left: 50%;
@@ -164,10 +298,11 @@ input {
   width: max-content;
   max-width: calc(100vw - 2 * var(--space-4));
   padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--danger);
   border-radius: var(--radius-md);
-  background: var(--danger);
-  color: #fff;
-  font-weight: 600;
+  background: var(--surface-200);
+  color: var(--danger);
+  font: 600 14px/20px var(--font-sans);
   text-align: center;
   box-shadow: var(--shadow-raised);
 }

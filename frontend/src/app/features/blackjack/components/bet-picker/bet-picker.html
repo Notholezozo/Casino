@@ -1,40 +1,46 @@
 <p class="status">
-  @switch (currentBet()) {
-    @case (null) {
-      Combien de gorgées mises-tu ?
-    }
-    @case (0) {
-      Tu passes cette manche. Tu peux encore changer d'avis.
-    }
-    @default {
-      Mise enregistrée : <strong>{{ currentBet()! | sips }}</strong>. Modifiable jusqu'à la donne.
-    }
+  @if (currentBet() === null) {
+    Combien mises-tu ?
+  } @else if (currentBet() === 0) {
+    Tu passes cette manche. Tu peux encore changer d'avis.
+  } @else {
+    Mise enregistrée : <strong>{{ currentBet()! | drinks: currentUnit() }}</strong>. Modifiable
+    jusqu'à la donne.
   }
 </p>
 
-<div class="chips" role="radiogroup" aria-label="Mise en gorgées">
-  @for (amount of amounts(); track amount) {
+<div class="tray" role="radiogroup" aria-label="Ta mise">
+  <div class="chips">
+    @for (chip of chips(); track chip.amount) {
+      <button
+        type="button"
+        class="chip chip--{{ chip.tier }}"
+        role="radio"
+        [attr.aria-checked]="selected() === chip.amount"
+        [attr.aria-label]="chip.amount | drinks"
+        [disabled]="disabled()"
+        (click)="selected.set(chip.amount)"
+      >
+        {{ chip.amount }}
+      </button>
+    }
+  </div>
+  @if (limits().allowCulSec) {
     <button
       type="button"
-      class="chip"
+      class="culsec"
       role="radio"
-      [class.is-selected]="selected() === amount"
-      [attr.aria-checked]="selected() === amount"
+      [attr.aria-checked]="selected() === 'CulSec'"
       [disabled]="disabled()"
-      (click)="selected.set(amount)"
+      (click)="selected.set('CulSec')"
     >
-      {{ amount }}
+      Cul sec
     </button>
   }
 </div>
 
 <div class="actions">
-  <button
-    type="button"
-    class="btn"
-    [disabled]="disabled() || currentBet() === 0"
-    (click)="pass()"
-  >
+  <button type="button" class="btn" [disabled]="disabled() || currentBet() === 0" (click)="pass()">
     Passer
   </button>
   <button
@@ -43,14 +49,13 @@
     [disabled]="disabled() || !canConfirm()"
     (click)="confirm()"
   >
-    @if (selected(); as amount) {
-      @if (amount === currentBet()) {
-        Mise : {{ amount | sips }}
-      } @else {
-        Miser {{ amount | sips }}
-      }
-    } @else {
+    @let choice = selected();
+    @if (choice === null) {
       Choisis ta mise
+    } @else if (choice === 'CulSec') {
+      {{ canConfirm() ? 'Miser un cul sec' : 'Mise : cul sec' }}
+    } @else {
+      {{ canConfirm() ? 'Miser' : 'Mise :' }} {{ choice | drinks }}
     }
   </button>
 </div>

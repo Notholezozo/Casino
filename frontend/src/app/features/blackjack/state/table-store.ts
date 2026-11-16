@@ -4,7 +4,7 @@ import { BlackjackApi } from '../../../core/api/blackjack-api';
 import { TablesApi } from '../../../core/api/tables-api';
 import { TableView } from '../../../core/models/blackjack.models';
 import { AdminSession } from '../../../core/session/session.model';
-import { LiveGameStore } from './live-game-store';
+import { LiveGameStore } from '../../../core/realtime/live-game-store';
 
 /** État et commandes de la page table (admin). */
 @Injectable()
@@ -15,7 +15,7 @@ export class TableStore extends LiveGameStore<TableView> {
 
   connect(session: AdminSession): void {
     this.session = session;
-    this.open(session.token, this.hub.on('TableState'));
+    this.open(session.token, 'TableState');
   }
 
   kick(playerId: string): void {

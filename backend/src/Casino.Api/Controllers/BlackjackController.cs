@@ -2,6 +2,7 @@ using Casino.Api.Auth;
 using Casino.Application.Blackjack;
 using Casino.Application.Blackjack.Contracts;
 using Casino.Application.Tables;
+using Casino.Domain.Blackjack;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,25 +15,20 @@ namespace Casino.Api.Controllers;
 [ApiController]
 [Route("api/blackjack")]
 [Authorize]
-public sealed class BlackjackController(IBlackjackService blackjack) : ControllerBase
+public sealed class BlackjackController(IBlackjackService blackjack, ITableService tables) : ControllerBase
 {
     /// <summary>État courant : vue joueur ou vue table selon le jeton présenté.</summary>
     [HttpGet("state")]
     [ProducesResponseType<PlayerViewDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<TableViewDto>(StatusCodes.Status200OK)]
-    public IActionResult GetState()
-    {
-        var session = User.GetSession();
-        return session.Role == SessionRole.Admin
-            ? Ok(blackjack.GetTableView(session))
-            : Ok(blackjack.GetPlayerView(session));
-    }
+    public IActionResult GetState() => Ok(tables.GetState(User.GetSession()));
 
     [HttpPost("bet")]
     [Authorize(Roles = SessionAuth.PlayerRole)]
     public async Task<IActionResult> PlaceBet(PlaceBetRequest request, CancellationToken ct)
     {
-        await blackjack.PlaceBetAsync(User.GetSession(), request.Sips, ct);
+        var bet = request.CulSec ? Bet.CulSec : Bet.Sips(request.Sips);
+        await blackjack.PlaceBetAsync(User.GetSession(), bet, ct);
         return NoContent();
     }
 

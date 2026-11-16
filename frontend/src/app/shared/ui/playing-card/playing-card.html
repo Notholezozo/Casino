@@ -1,11 +1,9 @@
 @if (card(); as face) {
-  <span class="corner">
-    <span class="rank">{{ face.rank }}</span>
-    <span class="suit">{{ symbol() }}</span>
+  <span class="index">
+    <span>{{ face.rank }}</span>
+    <span class="index__suit">{{ symbol() }}</span>
   </span>
   <span class="pip">{{ symbol() }}</span>
-  <span class="corner corner--bottom">
-    <span class="rank">{{ face.rank }}</span>
-    <span class="suit">{{ symbol() }}</span>
-  </span>
+} @else {
+  <span class="pip" aria-hidden="true">&#9670;&#xFE0E;</span>
 }

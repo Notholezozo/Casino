@@ -23,6 +23,9 @@ namespace Casino.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("AllowCulSec")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime?>("ClosedAtUtc")
                         .HasColumnType("TEXT");
 
@@ -38,6 +41,12 @@ namespace Casino.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("MaxBet")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("MinBet")
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
@@ -67,6 +76,12 @@ namespace Casino.Infrastructure.Persistence.Migrations
 
                     b.Property<Guid>("TableId")
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("TotalCulsSecsDrunk")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TotalCulsSecsGiven")
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("TotalDrunk")
                         .HasColumnType("INTEGER");
@@ -111,6 +126,40 @@ namespace Casino.Infrastructure.Persistence.Migrations
                     b.ToTable("Rounds", (string)null);
                 });
 
+            modelBuilder.Entity("Casino.Domain.Entities.RoundDrinkTransfer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Amount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("FromPlayerId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("RoundId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("ToPlayerId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Unit")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FromPlayerId");
+
+                    b.HasIndex("RoundId");
+
+                    b.HasIndex("ToPlayerId");
+
+                    b.ToTable("RoundDrinkTransfers", (string)null);
+                });
+
             modelBuilder.Entity("Casino.Domain.Entities.RoundHand", b =>
                 {
                     b.Property<Guid>("Id")
@@ -139,6 +188,11 @@ namespace Casino.Infrastructure.Persistence.Migrations
                     b.Property<int>("Total")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Unit")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
 
                     b.HasIndex("PlayerId");
@@ -146,35 +200,6 @@ namespace Casino.Infrastructure.Persistence.Migrations
                     b.HasIndex("RoundId");
 
                     b.ToTable("RoundHands", (string)null);
-                });
-
-            modelBuilder.Entity("Casino.Domain.Entities.RoundSipTransfer", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid>("FromPlayerId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid>("RoundId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("Sips")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<Guid>("ToPlayerId")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("FromPlayerId");
-
-                    b.HasIndex("RoundId");
-
-                    b.HasIndex("ToPlayerId");
-
-                    b.ToTable("RoundSipTransfers", (string)null);
                 });
 
             modelBuilder.Entity("Casino.Domain.Entities.Player", b =>
@@ -195,22 +220,7 @@ namespace Casino.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Casino.Domain.Entities.RoundHand", b =>
-                {
-                    b.HasOne("Casino.Domain.Entities.Player", null)
-                        .WithMany()
-                        .HasForeignKey("PlayerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Casino.Domain.Entities.Round", null)
-                        .WithMany("Hands")
-                        .HasForeignKey("RoundId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("Casino.Domain.Entities.RoundSipTransfer", b =>
+            modelBuilder.Entity("Casino.Domain.Entities.RoundDrinkTransfer", b =>
                 {
                     b.HasOne("Casino.Domain.Entities.Player", null)
                         .WithMany()
@@ -228,6 +238,21 @@ namespace Casino.Infrastructure.Persistence.Migrations
                         .WithMany()
                         .HasForeignKey("ToPlayerId")
                         .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Casino.Domain.Entities.RoundHand", b =>
+                {
+                    b.HasOne("Casino.Domain.Entities.Player", null)
+                        .WithMany()
+                        .HasForeignKey("PlayerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Casino.Domain.Entities.Round", null)
+                        .WithMany("Hands")
+                        .HasForeignKey("RoundId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 

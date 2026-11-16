@@ -1,12 +1,13 @@
 import { Injectable, signal } from '@angular/core';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import { Observable, Subject, filter, map } from 'rxjs';
-import { PlayerView, TableView } from '../models/blackjack.models';
 
 /** Événements poussés par le serveur sur /hubs/game (le client n'invoque rien). */
 export interface GameHubEvents {
-  PlayerState: PlayerView;
-  TableState: TableView;
+  /** Vue du joueur ; sa forme dépend du jeu de la table. */
+  PlayerState: unknown;
+  /** Vue de l'écran table ; sa forme dépend du jeu de la table. */
+  TableState: unknown;
   TableClosed: void;
   RemovedFromTable: void;
 }

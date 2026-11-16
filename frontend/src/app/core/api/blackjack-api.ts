@@ -3,11 +3,11 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
   DistributeRequest,
+  DrinkAllocation,
   PlaceBetRequest,
   PlayerAction,
   PlayerActionRequest,
   PlayerView,
-  SipAllocation,
   TableView,
 } from '../models/blackjack.models';
 
@@ -27,9 +27,9 @@ export class BlackjackApi {
     return this.http.get<TableView>(`${this.baseUrl}/state`);
   }
 
-  placeBet(sips: number): Observable<void> {
-    const body: PlaceBetRequest = { sips };
-    return this.http.post<void>(`${this.baseUrl}/bet`, body);
+  /** Mise en gorgées (0 = passer) ou cul sec. */
+  placeBet(bet: PlaceBetRequest): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/bet`, bet);
   }
 
   act(action: PlayerAction): Observable<void> {
@@ -37,7 +37,7 @@ export class BlackjackApi {
     return this.http.post<void>(`${this.baseUrl}/action`, body);
   }
 
-  distribute(allocations: SipAllocation[]): Observable<void> {
+  distribute(allocations: DrinkAllocation[]): Observable<void> {
     const body: DistributeRequest = { allocations };
     return this.http.post<void>(`${this.baseUrl}/distribution`, body);
   }

@@ -1,0 +1,11 @@
+// La mise en page (bandeau, table, croupier) vient de features/table-layout.
+// Il ne reste ici que l'écran d'attente de la connexion.
+
+.loading {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-4);
+  min-height: 100dvh;
+  color: var(--ink-muted);
+}

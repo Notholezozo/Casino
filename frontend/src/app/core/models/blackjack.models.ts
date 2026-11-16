@@ -5,25 +5,30 @@ export type HandStatus = 'Playing' | 'Stood' | 'Doubled' | 'Bust' | 'Blackjack';
 export type HandOutcome = 'Win' | 'Blackjack' | 'Push' | 'Lose';
 export type PlayerAction = 'Hit' | 'Stand' | 'Double' | 'Split';
 export type CardSuit = 'Clubs' | 'Diamonds' | 'Hearts' | 'Spades';
+/** Unité d'une mise : des gorgées, ou un cul sec (finir son verre), compté à part. */
+export type DrinkUnit = 'Sip' | 'CulSec';
 
 // ---------- Commandes ----------
 
 export interface PlaceBetRequest {
-  /** 0 = passer la manche. */
+  /** Nombre de gorgées ; 0 = passer la manche. Ignoré si `culSec` est vrai. */
   sips: number;
+  /** Miser un cul sec, si la table l'autorise. */
+  culSec?: boolean;
 }
 
 export interface PlayerActionRequest {
   action: PlayerAction;
 }
 
-export interface SipAllocation {
+export interface DrinkAllocation {
   playerId: string;
-  sips: number;
+  /** Quantité donnée, dans l'unité de la mise du gagnant. */
+  amount: number;
 }
 
 export interface DistributeRequest {
-  allocations: SipAllocation[];
+  allocations: DrinkAllocation[];
 }
 
 // ---------- Vues ----------
@@ -38,7 +43,9 @@ export interface Hand {
   cards: Card[];
   total: number;
   isSoft: boolean;
+  /** Quantité misée sur cette main, dans l'unité `unit`. */
   bet: number;
+  unit: DrinkUnit;
   status: HandStatus;
   outcome: HandOutcome | null;
   isActive: boolean;
@@ -54,36 +61,51 @@ export interface Dealer {
   isBust: boolean;
 }
 
-export interface SipTransfer {
+export interface DrinkTransfer {
   fromPlayerId: string;
   fromPlayerName: string;
   toPlayerId: string;
   toPlayerName: string;
-  sips: number;
+  amount: number;
+  unit: DrinkUnit;
 }
 
 export interface RoundResult {
-  /** Gorgées perdues sur ses propres mains. */
-  sipsLost: number;
-  /** Gorgées gagnées, à distribuer aux autres. */
-  sipsToDistribute: number;
+  /** Unité de `lost` et `toDistribute` : celle de la mise du joueur. */
+  unit: DrinkUnit;
+  /** Quantité perdue sur ses propres mains. */
+  lost: number;
+  /** Quantité gagnée, à distribuer aux autres. */
+  toDistribute: number;
   /** Faux s'il n'y a personne à qui distribuer. */
   canDistribute: boolean;
   distributionDone: boolean;
-  received: SipTransfer[];
-  given: SipTransfer[];
-  /** Total à boire : perdues + reçues. */
+  received: DrinkTransfer[];
+  given: DrinkTransfer[];
+  /** Gorgées à boire : perdues + reçues. */
   sipsToDrink: number;
+  /** Culs secs à boire : perdus + reçus. */
+  culsSecsToDrink: number;
 }
 
+/** Mises acceptées par la table, choisies à sa création. */
 export interface BetLimits {
   min: number;
   max: number;
+  allowCulSec: boolean;
 }
 
 export interface Shoe {
   remaining: number;
   total: number;
+}
+
+/** Cumuls d'un joueur depuis son arrivée à la table. */
+export interface DrinkTotals {
+  sipsDrunk: number;
+  sipsGiven: number;
+  culsSecsDrunk: number;
+  culsSecsGiven: number;
 }
 
 export interface OtherPlayer {
@@ -96,15 +118,15 @@ export interface OtherPlayer {
 export interface PlayerSelf {
   id: string;
   name: string;
-  /** null = pas encore répondu, 0 = passe. */
+  /** Quantité misée : null = pas encore répondu, 0 = passe. */
   bet: number | null;
+  betUnit: DrinkUnit;
   inRound: boolean;
   hands: Hand[];
   isMyTurn: boolean;
   allowedActions: PlayerAction[];
   result: RoundResult | null;
-  totalDrunk: number;
-  totalGiven: number;
+  totals: DrinkTotals;
 }
 
 /** Champs communs aux vues poussées par le serveur. */
@@ -118,12 +140,12 @@ export interface LiveView {
   roundNumber: number;
   dealer: Dealer;
   activePlayerId: string | null;
+  betLimits: BetLimits;
 }
 
 export interface PlayerView extends LiveView {
   me: PlayerSelf;
   others: OtherPlayer[];
-  betLimits: BetLimits;
 }
 
 export interface Seat {
@@ -131,17 +153,17 @@ export interface Seat {
   name: string;
   isConnected: boolean;
   bet: number | null;
+  betUnit: DrinkUnit;
   inRound: boolean;
   hands: Hand[];
   isActive: boolean;
   result: RoundResult | null;
-  totalDrunk: number;
-  totalGiven: number;
+  totals: DrinkTotals;
 }
 
 export interface TableView extends LiveView {
   seats: Seat[];
   maxPlayers: number;
   shoe: Shoe;
-  transfers: SipTransfer[];
+  transfers: DrinkTransfer[];
 }

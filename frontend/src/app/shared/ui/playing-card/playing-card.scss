@@ -1,56 +1,36 @@
+// Carte du design system : face ivoire, index en Playfair, dos bordeaux à filet or.
+// Toutes les dimensions internes découlent de --card-w.
+
 :host {
   position: relative;
   display: block;
   flex: none;
   width: var(--card-w);
   aspect-ratio: 5 / 7;
-  // Toutes les dimensions internes sont en em : elles suivent la largeur de la carte.
-  font-size: calc(var(--card-w) * 0.26);
-  border-radius: 0.5em;
-  background: var(--card-face);
-  color: var(--card-black);
+  border-radius: var(--radius-lg);
+  background: var(--chip-ivory);
+  color: var(--chip-black);
   box-shadow: var(--shadow-card);
-  animation: deal-in 260ms ease-out both;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: calc(var(--card-w) * 0.25);
+  line-height: 1;
 }
 
 :host(.is-red) {
-  color: var(--card-red);
+  color: var(--chip-red);
 }
 
-:host(.is-back) {
-  border: 0.22em solid var(--card-face);
-  background:
-    repeating-linear-gradient(45deg, transparent 0 0.35em, rgba(255, 255, 255, 0.14) 0.35em 0.7em),
-    repeating-linear-gradient(-45deg, transparent 0 0.35em, rgba(255, 255, 255, 0.14) 0.35em 0.7em),
-    linear-gradient(#8f1d2c, #5e0f1b);
-}
-
-.corner {
+.index {
   position: absolute;
-  top: 0.3em;
-  left: 0.35em;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  line-height: 1;
-  font-weight: 800;
+  top: calc(var(--card-w) * 0.08);
+  left: calc(var(--card-w) * 0.1);
+  display: grid;
+  justify-items: center;
 }
 
-.corner--bottom {
-  top: auto;
-  left: auto;
-  right: 0.35em;
-  bottom: 0.3em;
-  transform: rotate(180deg);
-}
-
-.rank {
-  font-size: 1em;
-  letter-spacing: -0.05em;
-}
-
-.suit {
-  font-size: 0.85em;
+.index__suit {
+  font-size: 0.8em;
 }
 
 .pip {
@@ -58,13 +38,18 @@
   inset: 0;
   display: grid;
   place-items: center;
-  font-size: 1.9em;
-  line-height: 1;
+  font-size: 2em;
 }
 
-@keyframes deal-in {
-  from {
-    opacity: 0;
-    transform: translateY(-40%) rotate(-6deg);
+:host(.is-back) {
+  border: calc(var(--card-w) * 0.06) solid var(--chip-ivory);
+  background: var(--burgundy);
+  color: var(--gold-fill);
+
+  .pip {
+    inset: calc(var(--card-w) * 0.06);
+    border: 1px solid var(--gold-fill);
+    border-radius: var(--radius-sm);
+    font-size: 1.2em;
   }
 }

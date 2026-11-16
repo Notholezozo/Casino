@@ -3,14 +3,14 @@
   display: inline-grid;
   place-items: center;
   flex: none;
-  width: var(--countdown-size, 3rem);
+  width: var(--countdown-size, 48px);
   aspect-ratio: 1;
-  color: var(--gold-400);
+  color: var(--gold);
 }
 
+// L'urgence passe par la couleur et le chiffre, pas par un clignotement.
 :host(.is-urgent) {
   color: var(--danger);
-  animation: pulse 1s ease-in-out infinite;
 }
 
 .ring {
@@ -22,24 +22,18 @@
 }
 
 .ring__track {
-  stroke: var(--border);
+  stroke: var(--line);
 }
 
 .ring__value {
   stroke: currentColor;
-  stroke-linecap: round;
   transition: stroke-dashoffset 200ms linear;
 }
 
 .seconds {
-  font-weight: 800;
-  font-size: calc(var(--countdown-size, 3rem) * 0.38);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: calc(var(--countdown-size, 48px) * 0.4);
   font-variant-numeric: tabular-nums;
   color: var(--ink);
-}
-
-@keyframes pulse {
-  50% {
-    transform: scale(1.08);
-  }
 }

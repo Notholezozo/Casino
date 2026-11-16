@@ -1,8 +1,8 @@
 <p class="remaining" [class.is-done]="remaining() === 0" aria-live="polite">
   @if (remaining() > 0) {
-    Encore <strong>{{ remaining() | sips }}</strong> à distribuer
+    Encore <strong>{{ remaining() | drinks: unit() }}</strong> à distribuer
   } @else {
-    Tout est réparti !
+    Tout est réparti.
   }
 </p>
 
@@ -20,19 +20,19 @@
       </button>
       <button
         type="button"
-        class="btn step"
-        [disabled]="disabled() || row.sips === 0"
-        [attr.aria-label]="'Retirer une gorgée à ' + row.player.name"
+        class="step"
+        [disabled]="disabled() || row.amount === 0"
+        [attr.aria-label]="'Retirer ' + one() + ' à ' + row.player.name"
         (click)="change(row.player.id, -1)"
       >
         −
       </button>
-      <span class="row__sips">{{ row.sips }}</span>
+      <span class="row__amount">{{ row.amount }}</span>
       <button
         type="button"
-        class="btn step"
+        class="step"
         [disabled]="disabled() || remaining() === 0"
-        [attr.aria-label]="'Donner une gorgée à ' + row.player.name"
+        [attr.aria-label]="'Donner ' + one() + ' à ' + row.player.name"
         (click)="change(row.player.id, 1)"
       >
         +
@@ -47,5 +47,5 @@
   [disabled]="disabled() || remaining() !== 0"
   (click)="submit()"
 >
-  Distribuer {{ total() | sips }}
+  Distribuer {{ total() | drinks: unit() }}
 </button>

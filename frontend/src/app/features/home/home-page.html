@@ -1,22 +1,22 @@
 <header class="hero">
   <p class="hero__suits" aria-hidden="true">&#9824;&#xFE0E; &#9829;&#xFE0E; &#9827;&#xFE0E; &#9830;&#xFE0E;</p>
-  <h1 class="hero__title">Blackjack</h1>
-  <p class="hero__tagline">Ici, on ne mise pas d'argent : on mise des gorgées.</p>
+  <h1 class="hero__title">Grand Salon</h1>
+  <p class="hero__tagline">Blackjack entre amis : ici, on ne mise pas d'argent, on mise des gorgées.</p>
 </header>
 
 @if (notice.message(); as message) {
-  <div class="notice" role="status">
+  <div class="alert" role="status">
     <span>{{ message }}</span>
-    <button type="button" class="notice__close" aria-label="Fermer" (click)="notice.dismiss()">
+    <button type="button" class="alert__close" aria-label="Fermer" (click)="notice.dismiss()">
       ×
     </button>
   </div>
 }
 
 @if (resume(); as current) {
-  <section class="panel resume">
+  <section class="panel">
     <p>{{ current.text }}</p>
-    <a class="btn btn--primary btn--block" [routerLink]="current.link">Reprendre la partie</a>
+    <a class="btn btn--block" [routerLink]="current.link">Reprendre la partie</a>
   </section>
 }
 
@@ -45,17 +45,19 @@
         [attr.maxlength]="nameMaxLength"
       />
     </label>
-    <button type="submit" class="btn btn--primary btn--block" [disabled]="pending() !== null">
-      {{ pending() === 'join' ? 'Connexion…' : 'Rejoindre' }}
+    <button
+      type="submit"
+      class="btn btn--primary btn--lg btn--block"
+      [disabled]="pending() !== null"
+    >
+      {{ pending() === 'join' ? 'Connexion…' : 'Rejoindre la table' }}
     </button>
   </form>
 </section>
 
 @if (error(); as message) {
-  <p class="error" role="alert">{{ message }}</p>
+  <p class="alert alert--danger" role="alert">Erreur : {{ message }}</p>
 }
-
-<p class="divider"><span>ou</span></p>
 
 <section class="panel">
   <h2 class="panel__title">Créer une table</h2>
@@ -63,14 +65,55 @@
     À ouvrir sur un PC ou une télé : la table s'y affiche, et chacun la rejoint avec son téléphone
     grâce au code.
   </p>
-  <button
-    type="button"
-    class="btn btn--block"
-    [disabled]="pending() !== null"
-    (click)="createTable()"
-  >
-    {{ pending() === 'create' ? 'Création…' : 'Créer une table' }}
-  </button>
+  <form class="form" [formGroup]="tableForm" (ngSubmit)="createTable()">
+    <fieldset class="games">
+      <legend class="label">Jeu</legend>
+      <label class="game">
+        <input type="radio" formControlName="game" value="Blackjack" />
+        <span class="game__name">Blackjack</span>
+        <span class="game__hint">Chacun contre le dealer</span>
+      </label>
+      <label class="game">
+        <input type="radio" formControlName="game" value="Poker" />
+        <span class="game__name">Poker</span>
+        <span class="game__hint">Texas Hold'em</span>
+      </label>
+    </fieldset>
+
+    <div class="limits">
+      <label class="field">
+        <span class="label">{{ game() === 'Poker' ? 'Petite blinde' : 'Mise minimum' }}</span>
+        <select class="input" formControlName="minBet">
+          @for (sips of minChoices; track sips) {
+            <option [ngValue]="sips">{{ sips }} {{ sips > 1 ? 'gorgées' : 'gorgée' }}</option>
+          }
+        </select>
+      </label>
+      <label class="field">
+        <span class="label">{{ game() === 'Poker' ? 'Relance maximum' : 'Mise maximum' }}</span>
+        <select class="input" formControlName="maxChoice">
+          @for (sips of maxChoices(); track sips) {
+            <option [ngValue]="sips">{{ sips }} {{ sips > 1 ? 'gorgées' : 'gorgée' }}</option>
+          }
+          @if (game() === 'Blackjack') {
+            <option [ngValue]="culSecChoice">Cul sec</option>
+          }
+        </select>
+      </label>
+    </div>
+    <p class="panel__hint">
+      @if (game() === 'Poker') {
+        On mise des gorgées au lieu de jetons ; la grosse blinde vaut le double de la petite.
+        Personne ne boit sa mise : le gagnant distribue tout le pot aux autres.
+      } @else {
+        « Cul sec » ajoute une mise au-dessus de 10 gorgées : perdu, tu finis ton verre ; gagné, tu
+        désignes qui finit le sien.
+      }
+    </p>
+    <button type="submit" class="btn btn--block" [disabled]="pending() !== null">
+      {{ pending() === 'create' ? 'Création…' : 'Créer une table' }}
+    </button>
+  </form>
 </section>
 
-<footer class="legal">L'abus d'alcool est dangereux pour la santé. Buvez avec modération.</footer>
+<footer class="legal">L'abus d'alcool est génial pour la santé. Buvez avec moi. ( la beuh aussi)</footer>

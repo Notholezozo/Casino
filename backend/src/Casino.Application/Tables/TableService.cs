@@ -1,8 +1,7 @@
 using Casino.Application.Abstractions;
 using Casino.Application.Common;
 using Casino.Application.Tables.Contracts;
-using Casino.Domain.Blackjack;
-using Casino.Domain.Cards;
+using Casino.Domain.Common;
 using Casino.Domain.Entities;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -12,9 +11,12 @@ namespace Casino.Application.Tables;
 /// <summary>Cycle de vie des tables : ouverture, arrivée et départ des joueurs, connexions, fermeture.</summary>
 public interface ITableService
 {
-    Task<CreateTableResponse> CreateAsync(CancellationToken ct = default);
+    Task<CreateTableResponse> CreateAsync(CreateTableRequest? request, CancellationToken ct = default);
 
     TableSummaryResponse GetSummary(string code);
+
+    /// <summary>État courant du jeu de la table : vue du joueur, ou vue de l'écran table pour l'admin.</summary>
+    object GetState(SessionIdentity identity);
 
     Task<JoinTableResponse> JoinAsync(string code, string? name, CancellationToken ct = default);
 
@@ -35,24 +37,26 @@ internal sealed class TableService(
     ITableRepository tables,
     ISnapshotDispatcher dispatcher,
     IGameNotifier notifier,
-    IRandomSource random,
+    IGameFactory games,
     TimeProvider clock,
     IOptions<TablesOptions> tablesOptions,
-    IOptions<BlackjackOptions> blackjackOptions,
     ILogger<TableService> logger) : ITableService
 {
     private const int MaxNameLength = 16;
 
-    public async Task<CreateTableResponse> CreateAsync(CancellationToken ct = default)
+    public async Task<CreateTableResponse> CreateAsync(CreateTableRequest? request, CancellationToken ct = default)
     {
         var now = clock.GetUtcNow();
-        var options = blackjackOptions.Value;
+        var setup = games.Create(request ?? new CreateTableRequest());
+        var settings = setup.Settings;
 
         var session = registry.TryOpen(tablesOptions.Value.MaxOpenTables, code => new TableSession(
             Guid.NewGuid(),
             code,
             TableRegistry.NewToken(),
-            new BlackjackGame(options.Rules, options.Timings, new Shoe(options.Rules.DeckCount, random), random),
+            settings,
+            setup.Game,
+            setup.Views,
             now));
 
         if (session is null)
@@ -70,8 +74,11 @@ internal sealed class TableService(
                 {
                     Id = session.TableId,
                     Code = session.Code,
-                    Game = GameType.Blackjack,
+                    Game = settings.Game,
                     CreatedAtUtc = now.UtcDateTime,
+                    MinBet = settings.MinBet,
+                    MaxBet = settings.MaxBet,
+                    AllowCulSec = settings.AllowCulSec,
                 },
                 ct);
         }
@@ -81,18 +88,32 @@ internal sealed class TableService(
             throw;
         }
 
-        logger.LogInformation("Table {Code} ouverte", session.Code);
-        return new CreateTableResponse(session.Code, session.AdminToken);
+        logger.LogInformation("Table {Code} ouverte ({Game})", session.Code, settings.Game);
+        return new CreateTableResponse(session.Code, session.AdminToken, settings.Game);
     }
 
     public TableSummaryResponse GetSummary(string code)
     {
         var session = GetSession(code);
+        var settings = session.Settings;
         return session.Read(game => new TableSummaryResponse(
             session.Code,
-            nameof(GameType.Blackjack),
-            game.Seats.Count,
-            game.Rules.MaxPlayers));
+            settings.Game,
+            game.Players.Count,
+            game.MaxPlayers,
+            settings.MinBet,
+            settings.MaxBet,
+            settings.AllowCulSec));
+    }
+
+    public object GetState(SessionIdentity identity)
+    {
+        var session = GetSession(identity.TableCode);
+        var now = clock.GetUtcNow();
+
+        return identity is { Role: SessionRole.Player, PlayerId: { } playerId }
+            ? session.GetPlayerView(playerId, now) ?? throw AppException.TableNotFound()
+            : session.GetTableView(now);
     }
 
     public async Task<JoinTableResponse> JoinAsync(string code, string? name, CancellationToken ct = default)
@@ -112,14 +133,14 @@ internal sealed class TableService(
         var playerId = Guid.NewGuid();
         var token = TableRegistry.NewToken();
 
-        var snapshot = session.Mutate(now, game =>
+        var snapshot = session.Mutate<ITableGame>(now, game =>
         {
-            if (game.Seats.Count >= game.Rules.MaxPlayers)
+            if (game.Players.Count >= game.MaxPlayers)
             {
                 throw new AppException(ErrorKind.Conflict, "table_full", "La table est complète.");
             }
 
-            if (game.Seats.Any(s => string.Equals(s.Name, playerName, StringComparison.OrdinalIgnoreCase)))
+            if (game.Players.Any(p => string.Equals(p.Name, playerName, StringComparison.OrdinalIgnoreCase)))
             {
                 throw new AppException(ErrorKind.Conflict, "name_taken", "Ce pseudo est déjà pris à cette table.");
             }
@@ -148,7 +169,7 @@ internal sealed class TableService(
         registry.RegisterPlayerToken(token, session.Code, playerId);
         await dispatcher.DispatchAsync(snapshot, ct);
 
-        return new JoinTableResponse(session.Code, playerId, playerName, token);
+        return new JoinTableResponse(session.Code, playerId, playerName, token, session.Settings.Game);
     }
 
     public async Task RemovePlayerAsync(SessionIdentity caller, string code, Guid playerId, CancellationToken ct = default)

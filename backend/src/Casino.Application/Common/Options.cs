@@ -13,6 +13,17 @@ public sealed class TablesOptions
     public TimeSpan IdleTimeout { get; set; } = TimeSpan.FromMinutes(30);
 }
 
+/// <summary>Règles et durées du poker (section "Poker" de la configuration).</summary>
+public sealed class PokerOptions
+{
+    public const string Section = "Poker";
+
+    /// <summary>Les blindes et les tailles de relance sont remplacées par les mises choisies pour la table.</summary>
+    public Casino.Domain.Poker.PokerRules Rules { get; set; } = new();
+
+    public Casino.Domain.Poker.PokerTimings Timings { get; set; } = new();
+}
+
 /// <summary>Règles et durées du blackjack (section "Blackjack" de la configuration).</summary>
 public sealed class BlackjackOptions
 {

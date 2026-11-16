@@ -1,7 +1,11 @@
 @if (seat(); as s) {
   <header class="head">
-    <span class="dot" [attr.title]="s.isConnected ? 'Connecté' : 'Déconnecté'"></span>
-    <span class="name">{{ s.name }}</span>
+    <span
+      class="presence"
+      [attr.title]="s.isConnected ? 'Connecté' : 'Déconnecté'"
+      [attr.aria-label]="s.isConnected ? 'Connecté' : 'Déconnecté'"
+    ></span>
+    <h3 class="name">{{ s.name }}</h3>
     <button
       type="button"
       class="kick"
@@ -15,33 +19,30 @@
 
   <div class="body">
     @for (hand of s.hands; track $index) {
-      <bj-hand [hand]="hand" />
+      <bj-hand [hand]="hand" [dealRank]="dealRank()" />
     } @empty {
       @if (s.bet) {
-        <span class="bet-chip">{{ s.bet }}</span>
-        <span class="idle">Mise : {{ s.bet | sips }}</span>
+        <p class="idle">
+          Mise : <strong>{{ s.bet | drinks: s.betUnit }}</strong>
+        </p>
       } @else {
-        <span class="idle">{{ idleText() }}</span>
+        <p class="idle">{{ idleText() }}</p>
       }
     }
   </div>
 
   @if (result(); as r) {
-    <p class="result" [class.is-clear]="r.sipsToDrink === 0">
-      @if (r.sipsToDrink > 0) {
-        Boit <strong>{{ r.sipsToDrink | sips }}</strong>
+    <p class="result">
+      @if (toDrink(); as drinks) {
+        Boit <strong>{{ drinks }}</strong>
       } @else {
         Ne boit pas
       }
-      @if (r.sipsToDistribute > 0 && r.canDistribute) {
-        <span class="result__give">
-          · {{ r.distributionDone ? 'a distribué' : 'distribue' }} {{ r.sipsToDistribute }}
-        </span>
+      @if (r.toDistribute > 0 && r.canDistribute) {
+        · {{ r.distributionDone ? 'a donné' : 'donne' }} {{ r.toDistribute | drinks: r.unit }}
       }
     </p>
   }
-
-  <footer class="totals">Bu {{ s.totalDrunk }} · Donné {{ s.totalGiven }}</footer>
 } @else {
-  <span class="idle">Siège libre</span>
+  <span class="free">Place libre</span>
 }

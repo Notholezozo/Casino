@@ -5,151 +5,177 @@
   flex-direction: column;
   gap: var(--space-4);
   width: 100%;
-  max-width: 26rem;
+  max-width: var(--sheet-max);
   min-height: 100dvh;
   margin: 0 auto;
   padding: calc(var(--space-5) + env(safe-area-inset-top)) var(--space-4)
     calc(var(--space-5) + env(safe-area-inset-bottom));
 
-  @include m.up('md') {
+  @include m.up('sm') {
     justify-content: center;
+    padding-inline: var(--space-6);
   }
 }
 
 .hero {
+  display: grid;
+  gap: var(--space-2);
   text-align: center;
 }
 
 .hero__suits {
-  font-size: 1.5rem;
+  color: var(--gold);
+  font-size: 20px;
   letter-spacing: 0.4em;
-  color: var(--gold-400);
 }
 
+// display-lg sur mobile, display-xl sur grand écran.
 .hero__title {
-  font-family: var(--font-display);
-  font-size: 3rem;
-  letter-spacing: 0.04em;
-  color: var(--gold-300);
+  font: 700 48px/54px var(--font-display);
+  letter-spacing: -0.005em;
+
+  @include m.up('lg') {
+    font-size: 72px;
+    line-height: 76px;
+    letter-spacing: -0.01em;
+  }
 }
 
 .hero__tagline {
-  margin-top: var(--space-2);
   color: var(--ink-muted);
+  font: 400 18px/28px var(--font-sans);
 }
 
 .panel {
   @include m.panel;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-4);
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-5);
 }
 
 .panel__title {
-  font-size: 1.15rem;
+  @include m.title;
 }
 
 .panel__hint {
+  @include m.body-sm;
   color: var(--ink-muted);
-  font-size: 0.9rem;
-}
-
-.resume {
-  border-color: var(--gold-600);
 }
 
 .form {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  gap: var(--space-4);
+}
+
+// Choix du jeu : deux tuiles côte à côte, celle qui est cochée prend un cadre or.
+.games {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: var(--space-3);
-}
+  margin: 0;
+  padding: 0;
+  border: 0;
 
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.input {
-  width: 100%;
-  min-height: var(--tap-target);
-  padding: 0 var(--space-3);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--surface-strong);
-  // 16px minimum : évite le zoom automatique d'iOS à la prise de focus.
-  font-size: 1.05rem;
-
-  &::placeholder {
-    color: rgba(246, 242, 231, 0.3);
+  legend {
+    margin-bottom: var(--space-1);
+    padding: 0;
   }
 }
 
-.input--code {
-  font-family: var(--font-display);
-  font-size: 1.6rem;
-  letter-spacing: 0.3em;
-  text-align: center;
-  text-transform: uppercase;
-}
-
-.notice,
-.error {
+.game {
+  position: relative;
+  display: grid;
+  gap: var(--space-1);
+  min-height: var(--tap-min);
   padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border-control);
   border-radius: var(--radius-md);
-  font-weight: 600;
+  background: var(--surface-200);
+  cursor: pointer;
+  transition:
+    border-color 160ms ease-out,
+    background-color 160ms ease-out;
+
+  // Le bouton radio natif reste accessible au clavier, mais c'est la tuile qui se voit.
+  input {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  &:has(input:checked) {
+    border-color: var(--gold);
+    background: var(--surface-300);
+    box-shadow: inset 0 0 0 1px var(--gold);
+  }
+
+  &:has(input:focus-visible) {
+    outline: 2px solid var(--focus);
+    outline-offset: 3px;
+  }
 }
 
-.notice {
+.game__name {
+  font: 600 20px/26px var(--font-display);
+}
+
+.game__hint {
+  @include m.caption;
+  color: var(--ink-muted);
+}
+
+// Mise minimum et maximum côte à côte.
+.limits {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+// Alerte du design system : un filet coloré, toujours accompagné d'un mot.
+.alert {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  background: rgba(124, 196, 255, 0.16);
-  border: 1px solid var(--info);
+  padding: var(--space-4);
+  border: 1px solid var(--gold);
+  border-radius: var(--radius-md);
+  background: var(--surface-200);
+  font: 400 14px/20px var(--font-sans);
 
   span {
     flex: 1;
   }
 }
 
-.notice__close {
+.alert--danger {
+  border-color: var(--danger);
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.alert__close {
+  display: grid;
+  place-items: center;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  margin: calc(var(--space-3) * -1);
   border: 0;
   background: transparent;
-  font-size: 1.4rem;
+  color: var(--ink-muted);
+  font-size: 24px;
   line-height: 1;
   cursor: pointer;
 }
 
-.error {
-  background: rgba(229, 72, 77, 0.18);
-  border: 1px solid var(--danger);
-  text-align: center;
-}
-
-.divider {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  color: var(--ink-muted);
-  font-size: 0.85rem;
-
-  &::before,
-  &::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--border);
-  }
-}
-
 .legal {
+  @include m.caption;
   margin-top: auto;
   text-align: center;
-  font-size: 0.75rem;
   color: var(--ink-muted);
 
-  @include m.up('md') {
+  @include m.up('sm') {
     margin-top: var(--space-2);
   }
 }

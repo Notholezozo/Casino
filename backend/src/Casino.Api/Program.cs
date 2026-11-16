@@ -13,6 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 // ---- Configuration métier
 builder.Services.Configure<TablesOptions>(builder.Configuration.GetSection(TablesOptions.Section));
 builder.Services.Configure<BlackjackOptions>(builder.Configuration.GetSection(BlackjackOptions.Section));
+builder.Services.Configure<PokerOptions>(builder.Configuration.GetSection(PokerOptions.Section));
 
 // ---- Couches
 builder.Services.AddApplication();

@@ -52,7 +52,9 @@ internal sealed class GameFixture
 
     public Seat Seat(int index) => Game.Seats.Single(s => s.PlayerId == Players[index]);
 
-    public void Bet(int index, int sips) => Game.PlaceBet(Players[index], sips, Now);
+    public void Bet(int index, int sips) => Game.PlaceBet(Players[index], Domain.Blackjack.Bet.Sips(sips), Now);
+
+    public void BetCulSec(int index) => Game.PlaceBet(Players[index], Domain.Blackjack.Bet.CulSec, Now);
 
     public void Act(int index, PlayerAction action) => Game.Act(Players[index], action, Now);
 

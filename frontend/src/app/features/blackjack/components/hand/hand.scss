@@ -1,31 +1,33 @@
+@use 'mixins' as m;
+
+// Toujours posée sur le tapis : les couleurs sont celles de --on-felt.
+
 :host {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  display: grid;
+  justify-items: center;
   gap: var(--space-2);
   padding: var(--space-2);
   border: 2px solid transparent;
   border-radius: var(--radius-md);
-  transition:
-    border-color 150ms ease,
-    opacity 150ms ease;
+  transition: border-color 160ms ease-out;
 }
 
+// La main à jouer se signale par un cadre or, pas par une animation.
 :host(.is-active) {
-  border-color: var(--gold-400);
-  background: rgba(233, 196, 106, 0.08);
+  border-color: var(--gold-fill);
 }
 
 :host(.is-lost) .cards {
-  opacity: 0.55;
+  opacity: 0.6;
 }
 
 .cards {
   display: flex;
   justify-content: center;
-  // Éventail : chaque carte recouvre la précédente pour tenir sur un téléphone.
+
+  // Chaque carte recouvre la précédente pour tenir sur un téléphone.
   > * + * {
-    margin-left: calc(var(--card-w) * -0.58);
+    margin-left: calc(var(--card-w) * -0.45);
   }
 }
 
@@ -38,17 +40,119 @@
 }
 
 .total {
-  min-width: 2rem;
-  padding: 0.1rem 0.5rem;
-  border-radius: 999px;
-  background: var(--surface-strong);
-  font-weight: 800;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
+  @include m.amount;
+  display: inline-grid;
+  place-items: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--on-felt);
+  color: var(--felt-deep);
+  font-size: 20px;
+  line-height: 1;
+  white-space: nowrap;
+
+  &.is-blackjack {
+    background: var(--gold-fill);
+    color: var(--on-gold);
+  }
+
+  &.is-bust {
+    background: var(--burgundy);
+    color: var(--on-burgundy);
+  }
 }
 
 .bet {
-  font-size: 0.8rem;
-  color: var(--gold-300);
-  font-weight: 600;
+  @include m.body-sm;
+  text-align: center;
+
+  strong {
+    font-weight: 700;
+  }
+}
+
+// Variante de la vue joueur : cartes à gauche, total et mise empilés à droite.
+:host(.is-side) {
+  grid-template-columns: auto auto;
+  grid-template-rows: 1fr 1fr;
+  align-items: center;
+  justify-content: center;
+  column-gap: var(--space-3);
+
+  .cards {
+    grid-row: 1 / -1;
+  }
+
+  .meta {
+    align-self: end;
+    justify-content: flex-start;
+  }
+
+  .bet {
+    align-self: start;
+    text-align: left;
+  }
+}
+
+// Le total et la mise n'apparaissent qu'une fois la donne posée, pas avant les cartes.
+.meta,
+.bet {
+  transition: opacity 200ms ease-out;
+}
+
+:host(.is-dealing) {
+  .meta,
+  .bet {
+    opacity: 0;
+    transition: none;
+  }
+}
+
+// Dans une place de la vue table, la main se resserre pour tenir sur l'arc :
+// total et mise sur une seule ligne, badge posé sur le coin des cartes.
+:host-context(bj-seat) {
+  position: relative;
+  grid-template-columns: auto auto;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  padding: var(--space-1);
+
+  .cards {
+    grid-column: 1 / -1;
+  }
+
+  .total {
+    min-width: 28px;
+    height: 28px;
+    font-size: 16px;
+  }
+
+  // Le badge chevauche le bas des cartes : les index (en haut à gauche) restent lisibles.
+  .badge {
+    position: absolute;
+    top: calc(var(--space-1) + var(--card-w) * 1.4 - 12px);
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 0 var(--space-1);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    box-shadow: var(--shadow-card);
+  }
+
+  .bet {
+    @include m.caption;
+    white-space: nowrap;
+  }
+
+  .bet__label {
+    display: none;
+  }
+}
+
+// Après un split, plusieurs mains partagent la place : seule la quantité reste (« 3 », « 1 »).
+:host-context(bj-seat.has-split) .bet {
+  display: none;
 }

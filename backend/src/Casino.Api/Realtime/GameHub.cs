@@ -1,6 +1,5 @@
 using Casino.Api.Auth;
 using Casino.Application.Abstractions;
-using Casino.Application.Blackjack.Contracts;
 using Casino.Application.Tables;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
@@ -53,10 +52,10 @@ public sealed class GameHub(ITableService tables) : Hub
 
 internal sealed class SignalRGameNotifier(IHubContext<GameHub> hub) : IGameNotifier
 {
-    public Task SendPlayerStateAsync(Guid playerId, PlayerViewDto view) =>
+    public Task SendPlayerStateAsync(Guid playerId, object view) =>
         hub.Clients.Group(GameChannels.Player(playerId)).SendAsync(GameChannels.PlayerState, view);
 
-    public Task SendTableStateAsync(string tableCode, TableViewDto view) =>
+    public Task SendTableStateAsync(string tableCode, object view) =>
         hub.Clients.Group(GameChannels.Admin(tableCode)).SendAsync(GameChannels.TableState, view);
 
     public Task SendTableClosedAsync(string tableCode) =>

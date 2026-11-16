@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
+  CreateTableRequest,
   CreateTableResponse,
   JoinTableRequest,
   JoinTableResponse,
@@ -14,8 +15,8 @@ export class TablesApi {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = '/api/tables';
 
-  create(): Observable<CreateTableResponse> {
-    return this.http.post<CreateTableResponse>(this.baseUrl, null);
+  create(request: CreateTableRequest): Observable<CreateTableResponse> {
+    return this.http.post<CreateTableResponse>(this.baseUrl, request);
   }
 
   getSummary(code: string): Observable<TableSummary> {

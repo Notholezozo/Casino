@@ -20,7 +20,7 @@ public sealed class Round
 
     public List<RoundHand> Hands { get; set; } = [];
 
-    public List<RoundSipTransfer> Transfers { get; set; } = [];
+    public List<RoundDrinkTransfer> Transfers { get; set; } = [];
 }
 
 public sealed class RoundHand
@@ -35,13 +35,16 @@ public sealed class RoundHand
 
     public int Total { get; set; }
 
-    /// <summary>Mise finale en gorgées (doublée le cas échéant).</summary>
+    /// <summary>Mise finale (doublée le cas échéant), dans l'unité <see cref="Unit"/>.</summary>
     public int Bet { get; set; }
+
+    public DrinkUnit Unit { get; set; }
 
     public HandOutcome Outcome { get; set; }
 }
 
-public sealed class RoundSipTransfer
+/// <summary>Ce qu'un gagnant a fait boire à un autre joueur : des gorgées ou des culs secs.</summary>
+public sealed class RoundDrinkTransfer
 {
     public Guid Id { get; set; }
 
@@ -51,5 +54,7 @@ public sealed class RoundSipTransfer
 
     public Guid ToPlayerId { get; set; }
 
-    public int Sips { get; set; }
+    public int Amount { get; set; }
+
+    public DrinkUnit Unit { get; set; }
 }

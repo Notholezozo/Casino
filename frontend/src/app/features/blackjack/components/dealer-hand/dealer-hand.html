@@ -1,23 +1,26 @@
-<span class="label">Croupier</span>
-@if (hasCards()) {
+<span class="label">{{ label }}</span>
+@if (slots().length > 0) {
   <div class="cards">
-    @for (card of dealer().cards; track $index) {
-      <app-playing-card [card]="card" />
-    }
-    @if (dealer().hasHiddenCard) {
-      <app-playing-card />
+    @for (slot of slots(); track $index) {
+      <app-playing-card [card]="slot" [dealOrder]="$index * 10 + dealRank" />
     }
   </div>
   <div class="meta">
-    <span class="total">{{ total() }}</span>
+    <span
+      class="total"
+      [class.is-blackjack]="dealer().isBlackjack"
+      [class.is-bust]="dealer().isBust"
+    >
+      {{ total() }}
+    </span>
     @if (dealer().isBlackjack) {
-      <span class="badge badge--gold">Blackjack</span>
+      <span class="badge badge--solid">Blackjack</span>
     } @else if (dealer().isBust) {
-      <span class="badge badge--danger">Sauté</span>
+      <span class="badge badge--burgundy">Bust</span>
     }
   </div>
 } @else {
-  <div class="cards cards--empty" aria-hidden="true">
+  <div class="cards" aria-hidden="true">
     <span class="slot"></span>
     <span class="slot"></span>
   </div>

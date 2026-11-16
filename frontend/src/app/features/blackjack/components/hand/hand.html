@@ -1,12 +1,21 @@
 <div class="cards">
-  @for (card of hand().cards; track $index) {
-    <app-playing-card [card]="card" />
+  <!-- Suivi par carte : une carte remplacée (après un split) est une nouvelle carte, donc redistribuée. -->
+  @for (card of hand().cards; track card.rank + card.suit + $index) {
+    <app-playing-card [card]="card" [dealOrder]="$index * 10 + dealRank()" />
   }
 </div>
 <div class="meta">
-  <span class="total">{{ total() }}</span>
-  <span class="bet">{{ hand().bet | sips }}</span>
+  <span
+    class="total"
+    [class.is-blackjack]="hand().status === 'Blackjack'"
+    [class.is-bust]="hand().status === 'Bust'"
+  >
+    {{ total() }}
+  </span>
   @if (badge(); as status) {
     <span class="badge badge--{{ status.tone }}">{{ status.label }}</span>
   }
 </div>
+<p class="bet">
+  <span class="bet__label">Mise : </span><strong>{{ hand().bet | drinks: hand().unit }}</strong>
+</p>

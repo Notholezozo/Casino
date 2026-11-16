@@ -1,35 +1,62 @@
-using Casino.Application.Blackjack;
-using Casino.Application.Blackjack.Contracts;
+using Casino.Application.Common;
 using Casino.Domain.Blackjack;
+using Casino.Domain.Common;
+using Casino.Domain.Entities;
 
 namespace Casino.Application.Tables;
+
+/// <summary>Réglages choisis à la création de la table.</summary>
+public sealed record TableSettings(GameType Game, int MinBet, int MaxBet, bool AllowCulSec);
+
+/// <summary>
+/// Projette l'état d'un moteur de jeu vers les vues envoyées aux écrans. Une implémentation par jeu :
+/// c'est elle qui garantit qu'un téléphone ne reçoit que ce que son joueur a le droit de voir.
+/// </summary>
+public interface IGameViewBuilder
+{
+    object BuildTableView(string tableCode, long version, DateTimeOffset now);
+
+    /// <summary>Vue d'un joueur, ou null s'il n'est pas assis à la table.</summary>
+    object? BuildPlayerView(Guid playerId, string tableCode, long version, DateTimeOffset now);
+}
 
 /// <summary>Photo cohérente d'une table après une modification : ce qu'il faut diffuser et enregistrer.</summary>
 public sealed record TableSnapshot(
     Guid TableId,
     string Code,
-    TableViewDto Table,
-    IReadOnlyDictionary<Guid, PlayerViewDto> Players,
+    object Table,
+    IReadOnlyDictionary<Guid, object> Players,
     RoundSummary? CompletedRound);
 
 /// <summary>
 /// Table ouverte, en mémoire : le moteur de jeu, les jetons d'accès et les connexions.
-/// Tout accès au moteur passe par <see cref="Mutate"/> ou <see cref="Read{T}"/>, qui le sérialisent.
+/// Elle ne connaît pas les règles : tout accès au moteur passe par <see cref="Mutate{TGame}"/>
+/// ou <see cref="Read{T}"/>, qui le sérialisent.
 /// </summary>
 public sealed class TableSession
 {
     private readonly Lock _gate = new();
-    private readonly BlackjackGame _game;
+    private readonly ITableGame _game;
+    private readonly IGameViewBuilder _views;
     private readonly Dictionary<Guid, int> _playerConnections = [];
     private int _adminConnections;
     private long _version;
 
-    public TableSession(Guid tableId, string code, string adminToken, BlackjackGame game, DateTimeOffset now)
+    public TableSession(
+        Guid tableId,
+        string code,
+        string adminToken,
+        TableSettings settings,
+        ITableGame game,
+        IGameViewBuilder views,
+        DateTimeOffset now)
     {
         TableId = tableId;
         Code = code;
         AdminToken = adminToken;
+        Settings = settings;
         _game = game;
+        _views = views;
         IdleSince = now;
     }
 
@@ -38,6 +65,8 @@ public sealed class TableSession
     public string Code { get; }
 
     public string AdminToken { get; }
+
+    public TableSettings Settings { get; }
 
     /// <summary>Instant depuis lequel plus aucun écran n'est connecté ; null si au moins un l'est.</summary>
     public DateTimeOffset? IdleSince
@@ -53,12 +82,16 @@ public sealed class TableSession
         private set;
     }
 
-    /// <summary>Exécute une modification du jeu et renvoie la photo à diffuser.</summary>
-    public TableSnapshot Mutate(DateTimeOffset now, Action<BlackjackGame> action)
+    /// <summary>
+    /// Exécute une modification du jeu et renvoie la photo à diffuser.
+    /// Échoue si la table ne joue pas au jeu attendu (commande de blackjack sur une table de poker…).
+    /// </summary>
+    public TableSnapshot Mutate<TGame>(DateTimeOffset now, Action<TGame> action)
+        where TGame : class, ITableGame
     {
         lock (_gate)
         {
-            action(_game);
+            action(_game as TGame ?? throw WrongGame());
             return Capture(now);
         }
     }
@@ -72,7 +105,7 @@ public sealed class TableSession
         }
     }
 
-    public T Read<T>(Func<BlackjackGame, T> query)
+    public T Read<T>(Func<ITableGame, T> query)
     {
         lock (_gate)
         {
@@ -80,13 +113,21 @@ public sealed class TableSession
         }
     }
 
-    public TableViewDto GetTableView(DateTimeOffset now) =>
-        Read(game => BlackjackViewMapper.ToTableView(game, Code, _version, now));
+    public object GetTableView(DateTimeOffset now)
+    {
+        lock (_gate)
+        {
+            return _views.BuildTableView(Code, _version, now);
+        }
+    }
 
-    public PlayerViewDto? GetPlayerView(Guid playerId, DateTimeOffset now) =>
-        Read(game => game.Seats.FirstOrDefault(s => s.PlayerId == playerId) is { } seat
-            ? BlackjackViewMapper.ToPlayerView(game, seat, Code, _version, now)
-            : null);
+    public object? GetPlayerView(Guid playerId, DateTimeOffset now)
+    {
+        lock (_gate)
+        {
+            return _views.BuildPlayerView(playerId, Code, _version, now);
+        }
+    }
 
     /// <summary>Compte un écran de plus (ou de moins) pour l'admin. Un joueur peut avoir plusieurs onglets.</summary>
     public TableSnapshot TrackAdminConnection(bool connected, DateTimeOffset now)
@@ -103,7 +144,7 @@ public sealed class TableSession
     {
         lock (_gate)
         {
-            if (_game.Seats.All(s => s.PlayerId != playerId))
+            if (_game.Players.All(p => p.Id != playerId))
             {
                 return null;
             }
@@ -139,10 +180,13 @@ public sealed class TableSession
         return new TableSnapshot(
             TableId,
             Code,
-            BlackjackViewMapper.ToTableView(_game, Code, _version, now),
-            _game.Seats.ToDictionary(
-                seat => seat.PlayerId,
-                seat => BlackjackViewMapper.ToPlayerView(_game, seat, Code, _version, now)),
+            _views.BuildTableView(Code, _version, now),
+            _game.Players.ToDictionary(
+                player => player.Id,
+                player => _views.BuildPlayerView(player.Id, Code, _version, now)!),
             _game.TakeCompletedRound());
     }
+
+    private static AppException WrongGame() =>
+        new(ErrorKind.Validation, "wrong_game", "Cette action n'existe pas dans le jeu de cette table.");
 }
